@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>漫画</title>
+
+</head>
+<style>
+	html,body{
+		height: 100%;
+	}
+	body { font-family: Arial, sans-serif; padding: 0; margin: 0; position: relative; }
+.floating-button {
+    position: fixed;
+    z-index: 10;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    background-color: #007BFF;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+.floating-button:hover {
+    background-color: #0056b3;
+}
+.left { top: 20px; left: 10px; transform: translateY(-50%); }
+.right { top: 20px; right: 10px; transform: translateY(-50%); }
+
+ #prev.left,#next.left{
+	top: auto;
+	bottom: 20px;
+} 
+#prev.right,#next.right{
+	top: auto;
+	bottom: 20px;
+} 
+
+.list-panel {
+    position: fixed;
+    top: 0; bottom: 0;
+		z-index: 5;
+    width: 250px;
+    overflow-y: auto;
+    background: #f0f0f0;
+    transform: translateX(-100%);
+    transition: transform 0.5s;
+    padding: 40px 10px;
+}
+.list-panel.right {
+    right: 0;
+    transform: translateX(100%);
+}
+img{
+	margin: 0;
+	padding: 0;
+	display: flex;
+}
+.content-area {
+    position: absolute;
+		width: 100%;
+		height: calc(100% - 40px);
+    top: 40px; left: 0; right: 0; bottom: 0;
+    /* display: flex; */
+    /* justify-content: center; */
+    /* align-items: center; */
+    text-align: center;
+    background: #fff;
+    z-index: 4;
+		overflow: auto;
+}
+#header {
+		position: fixed;
+		top: 0; left: 0; right: 0;
+		height: 40px;
+		background: #007BFF;
+		color: white;
+		text-align: center;
+		line-height: 40px;
+		z-index: 3;
+	}
+
+	img { width: 100%; } /* 图片响应式处理 */
+</style>
+<body>
+	<button id="toggleComicsList" class="floating-button left">漫画列表</button>
+	<button id="toggleEpisodesList" class="floating-button right">集数列表</button>
+	<div id="header"></div>
+	<button id="prev" class="floating-button left">上一话</button>
+	<button id="next" class="floating-button right">下一话</button>
+
+	<div id="comics" class="list-panel"></div>
+	<div id="episodes" class="list-panel"></div>
+	<div id="content" class="content-area">请选择一个漫画和集数来开始阅读。</div>
+
+</body>
+</html>
