@@ -10,21 +10,28 @@ let curEpisodesAry = []
 let scrollInterval; // 用于存储定时器ID
 let scrollSpeed = 1; // 滚动速度，每次滚动1像素
 let isScrolling = false; // 标记是否正在滚动
+let scrollAnimationFrame;
 
-function startAutoScroll(element) {
-    scrollInterval = setInterval(function() {
-        if (element.scrollTop < element.scrollHeight - element.clientHeight) {
-            element.scrollTop += scrollSpeed; // 每次滚动1像素
-						isScrolling = true;
-        } else {
-            stopAutoScroll(); // 如果滚动到底部，自动停止
-        }
-    }, 10);
+function smoothAutoScroll(element) {
+	var lastPosition = element.scrollTop;
+	function scrollStep() {
+			if (element.scrollTop < element.scrollHeight - element.clientHeight) {
+					element.scrollTop += scrollSpeed;
+					if (element.scrollTop !== lastPosition) {
+							lastPosition = element.scrollTop;
+							scrollAnimationFrame = requestAnimationFrame(scrollStep);
+					} else {
+							cancelAnimationFrame(scrollAnimationFrame); // 如果滚动没有变化，停止动画
+					}
+			} else {
+					cancelAnimationFrame(scrollAnimationFrame); // 如果到达底部，停止动画
+			}
+	}
+	scrollAnimationFrame = requestAnimationFrame(scrollStep);
 }
 
-function stopAutoScroll() {
-    clearInterval(scrollInterval);
-		isScrolling = false;
+function stopSmoothScroll() {
+	cancelAnimationFrame(scrollAnimationFrame);
 }
 
 function fetchComics() {
@@ -166,19 +173,23 @@ document.getElementById('prev').addEventListener(action, e => {
 });
 
 document.getElementById('play').addEventListener(action, e => {
+	const scrollEle = document.getElementById('content');
 	if(isScrolling){
 		if(scrollSpeed === 1){
 			scrollSpeed = 2;
+			// smoothAutoScroll(scrollEle, scrollSpeed)
 		} else if(scrollSpeed === 2){
 			scrollSpeed = 3;
+			// smoothAutoScroll(scrollEle, scrollSpeed)
 		} else if(scrollSpeed === 3){
 			scrollSpeed = 4;
+			// smoothAutoScroll(scrollEle, scrollSpeed)
 		} else if (scrollSpeed === 4){
 			scrollSpeed = 1;
-			stopAutoScroll();
+			stopSmoothScroll();
 		}
 	} else{
-		startAutoScroll(document.getElementById('content'));
+		smoothAutoScroll(scrollEle, scrollSpeed)
 	}
 });
 // 其他已有的函数继续保持不变
