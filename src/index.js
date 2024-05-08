@@ -8,7 +8,7 @@ let curComicName = 'jmtt';
 let curComicEpisode = 0;
 let curEpisodesAry = []
 let scrollInterval; // 用于存储定时器ID
-let scrollSpeed = 2; // 滚动速度，每次滚动1像素
+let scrollSpeed = 1; // 滚动速度，每次滚动1像素
 let isScrolling = false; // 标记是否正在滚动
 
 function startAutoScroll(element) {
@@ -167,7 +167,16 @@ document.getElementById('prev').addEventListener(action, e => {
 
 document.getElementById('play').addEventListener(action, e => {
 	if(isScrolling){
-		stopAutoScroll();
+		if(scrollSpeed === 1){
+			scrollSpeed = 2;
+		} else if(scrollSpeed === 2){
+			scrollSpeed = 3;
+		} else if(scrollSpeed === 3){
+			scrollSpeed = 4;
+		} else if (scrollSpeed === 4){
+			scrollSpeed = 1;
+			stopAutoScroll();
+		}
 	} else{
 		startAutoScroll(document.getElementById('content'));
 	}
