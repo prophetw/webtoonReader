@@ -1,3 +1,8 @@
+/******/ (() => { // webpackBootstrap
+var __webpack_exports__ = {};
+/*!**********************!*\
+  !*** ./src/index.js ***!
+  \**********************/
 // const baseUrl = "http://192.168.1.11:3000";
 // const hostname = window.location.hostname;
 // const baseUrl = `http://${hostname}:3000`;
@@ -177,3 +182,6 @@ document.getElementById('play').addEventListener(action, e => {
 
 // 初始化加载漫画列表
 document.addEventListener('DOMContentLoaded', fetchComics);
+/******/ })()
+;
+//# sourceMappingURL=bundle.js.map
