@@ -8,7 +8,7 @@ let curComicName = 'jmtt';
 let curComicEpisode = 0;
 let curEpisodesAry = []
 let scrollInterval; // 用于存储定时器ID
-let scrollSpeed = 1; // 滚动速度，每次滚动1像素
+let scrollSpeed = 2; // 滚动速度，每次滚动1像素
 let isScrolling = false; // 标记是否正在滚动
 
 function startAutoScroll(element) {
