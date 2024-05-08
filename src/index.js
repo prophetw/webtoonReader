@@ -1,10 +1,31 @@
 // const baseUrl = "http://192.168.1.11:3000";
-const baseUrl = "http://localhost:3000";
+const hostname = window.location.hostname;
+const baseUrl = `http://${hostname}:3000`;
 // const baseUrl = "";
+const isMobile =  /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
 let curComicName = 'jmtt';
 let curComicEpisode = 0;
 let curEpisodesAry = []
+let scrollInterval; // 用于存储定时器ID
+let scrollSpeed = 1; // 滚动速度，每次滚动1像素
+let isScrolling = false; // 标记是否正在滚动
+
+function startAutoScroll(element) {
+    scrollInterval = setInterval(function() {
+        if (element.scrollTop < element.scrollHeight - element.clientHeight) {
+            element.scrollTop += scrollSpeed; // 每次滚动1像素
+						isScrolling = true;
+        } else {
+            stopAutoScroll(); // 如果滚动到底部，自动停止
+        }
+    }, 10);
+}
+
+function stopAutoScroll() {
+    clearInterval(scrollInterval);
+		isScrolling = false;
+}
 
 function fetchComics() {
 	fetch(`${baseUrl}/api/comics`)
@@ -134,13 +155,23 @@ function handleGesture() {
 //     handleGesture();
 // });
 
-document.getElementById('next').addEventListener('touchstart', e => {
+
+let action = isMobile ? 'touchstart' : 'click';
+
+document.getElementById('next').addEventListener(action, e => {
 	loadNextEpisode();
 });
-document.getElementById('prev').addEventListener('touchstart', e => {
+document.getElementById('prev').addEventListener(action, e => {
 	loadPreviousEpisode();
 });
 
+document.getElementById('play').addEventListener(action, e => {
+	if(isScrolling){
+		stopAutoScroll();
+	} else{
+		startAutoScroll(document.getElementById('content'));
+	}
+});
 // 其他已有的函数继续保持不变
 
 
