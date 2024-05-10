@@ -22,7 +22,10 @@ app.get('/api/comics', (req, res) => {
             res.status(500).send('Error reading comics directory');
             return;
         }
-        res.json(files);
+        const comicsAry = files.filter(name=>!name.startsWith('.')).sort((a,b)=>{
+            return a.localeCompare(b, 'zh-Hans-CN')
+        })
+        res.json(comicsAry);
     });
 });
 

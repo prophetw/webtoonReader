@@ -8,13 +8,14 @@ let curComicName = 'jmtt';
 let curComicEpisode = 0;
 let curEpisodesAry = []
 let scrollInterval; // 用于存储定时器ID
-let scrollSpeed = 1; // 滚动速度，每次滚动1像素
+let scrollSpeed = 2; // 滚动速度，每次滚动1像素
 let isScrolling = false; // 标记是否正在滚动
 let scrollAnimationFrame;
 
 function smoothAutoScroll(element) {
 	var lastPosition = element.scrollTop;
 	function scrollStep() {
+	isScrolling = true;
 			if (element.scrollTop < element.scrollHeight - element.clientHeight) {
 					element.scrollTop += scrollSpeed;
 					if (element.scrollTop !== lastPosition) {
@@ -32,6 +33,8 @@ function smoothAutoScroll(element) {
 
 function stopSmoothScroll() {
 	cancelAnimationFrame(scrollAnimationFrame);
+
+	isScrolling = false;
 }
 
 function fetchComics() {
@@ -175,21 +178,23 @@ document.getElementById('prev').addEventListener(action, e => {
 document.getElementById('play').addEventListener(action, e => {
 	const scrollEle = document.getElementById('content');
 	if(isScrolling){
-		if(scrollSpeed === 1){
-			scrollSpeed = 2;
-			// smoothAutoScroll(scrollEle, scrollSpeed)
-		} else if(scrollSpeed === 2){
+		if(scrollSpeed === 2){
 			scrollSpeed = 3;
 			// smoothAutoScroll(scrollEle, scrollSpeed)
 		} else if(scrollSpeed === 3){
 			scrollSpeed = 4;
 			// smoothAutoScroll(scrollEle, scrollSpeed)
-		} else if (scrollSpeed === 4){
-			scrollSpeed = 1;
+		} else if(scrollSpeed === 4){
+			scrollSpeed = 6;
+			// smoothAutoScroll(scrollEle, scrollSpeed)
+		} else if (scrollSpeed === 6){
+			scrollSpeed = 2;
 			stopSmoothScroll();
 		}
+
+//			stopSmoothScroll();
 	} else{
-		smoothAutoScroll(scrollEle, scrollSpeed)
+		smoothAutoScroll(scrollEle)
 	}
 });
 // 其他已有的函数继续保持不变
