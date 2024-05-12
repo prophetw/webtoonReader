@@ -29,14 +29,25 @@ function hideAddressBar() {
 function smoothAutoScroll(element) {
 	var lastPosition = element.scrollTop;
 	isScrolling = true;
+  let consecutiveSamePositionCount = 0; // 连续相同位置的计数器
+
 	function scrollStep() {
 		if (element.scrollTop < element.scrollHeight - element.clientHeight) {
 			element.scrollTop += scrollSpeed;
 			if (element.scrollTop !== lastPosition) {
 				lastPosition = element.scrollTop;
+				consecutiveSamePositionCount = 0;
 				scrollAnimationFrame = requestAnimationFrame(scrollStep);
 			} else {
-				stopSmoothScroll(); // 如果滚动没有变化，停止动画
+				consecutiveSamePositionCount++;
+				if (consecutiveSamePositionCount > 10) { // 假设连续10次位置不变表示滚动到底部
+						stopSmoothScroll(); // 停止动画
+						if (autoNext) {
+								loadNextEpisode(true);
+						}
+				} else {
+						scrollAnimationFrame = requestAnimationFrame(scrollStep);
+				}
 			}
 		} else {
 			stopSmoothScroll(); // 如果到达底部，停止动画
@@ -168,7 +179,25 @@ function loadImagesSequentially(imageUrls, container) {
 	loadImage();
 	return promise;
 }
+
+function warning(message, duration) {
+	const warningPanel = document.getElementById('warningPanel');
+	const warningMessage = document.getElementById('warningMessage');
+	warningMessage.innerHTML = message;
+	warningPanel.style.display = 'block';
+	setTimeout(() => {
+		warningPanel.style.display = 'none';
+	}, duration);
+}
+
+// warning('请点击漫画名称查看漫画列表', 3000);
+
+
 function fetchImages(comicName, episode, imagesContainer) {
+	if(!episode){
+		warning('没有找到该集', 2000);
+		return 
+	}
 	showLoading();
 	fetch(`${baseUrl}/api/comics/${comicName}/${episode}`)
 		.then(response => response.json())
@@ -218,6 +247,15 @@ function confirm(title, message, duration) {
 			confirmPanel.style.display = 'none';
 			resolve(true);
 		}, duration);
+		// update rest time in message 
+		const interval = setInterval(() => {
+			duration -= 1000;
+			confirmMessage.innerHTML = `${message} <br> ${duration / 1000} seconds left`;
+			if (duration <= 0) {
+				clearInterval(interval);
+			}
+		}, 1000);
+
 	})
 }
 // confirm('Next Episode', 'Loading next episode...', 2000).then(isConfirmed => {
