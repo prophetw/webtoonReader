@@ -3,10 +3,10 @@ var __webpack_exports__ = {};
 /*!**********************!*\
   !*** ./src/index.js ***!
   \**********************/
-const baseUrl = "http://192.168.1.11:3000";
+// const baseUrl = "http://192.168.1.11:3000";
 // const hostname = window.location.hostname;
 // const baseUrl = `http://${hostname}:3000`;
-// const baseUrl = "";
+const baseUrl = "";
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 let action = isMobile ? 'touchstart' : 'click';
 
@@ -211,11 +211,14 @@ function fetchImages(comicName, episode, imagesContainer) {
 			document.getElementById('header').innerHTML = `${comicName} - ${episode}`;
 			imagesContainer = imagesContainer ? imagesContainer : document.getElementById('content');
 			imagesContainer.innerHTML = '';
-			await loadImagesSequentially(images, imagesContainer);
-			hideLoading();
 			if(autoPlay){
 				console.log(' autoPlay');
+				await loadImagesSequentially(images, imagesContainer);
+				hideLoading();
 				smoothAutoScroll(document.getElementById('content'));
+			}else{
+				loadImagesSequentially(images, imagesContainer);
+				hideLoading();
 			}
 		})
 		.catch(error => {
