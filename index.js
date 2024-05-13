@@ -5,16 +5,14 @@ const path = require('path');
 const cors = require('cors');
 
 app.use(cors());
+const baseUrl = `https://se8.us/index.php/chapter/`
+const idToPidMap = new Map()
 
 
-// 为漫画资源提供静态文件服务
 app.use('/static/manhua', express.static('manhua'));
 
-// 为另一个目录提供静态文件服务，例如存放音乐的目录
 app.use('/static/comic', express.static('comic'));
 
-
-// API接口：获取漫画列表
 app.get('/api/comics', (req, res) => {
     const comicsDir = path.join(__dirname, 'manhua');
     fs.readdir(comicsDir, (err, files) => {
@@ -22,14 +20,43 @@ app.get('/api/comics', (req, res) => {
             res.status(500).send('Error reading comics directory');
             return;
         }
-        const comicsAry = files.filter(name=>!name.startsWith('.')).sort((a,b)=>{
+        const comicsAry = files.filter(name => !name.startsWith('.')).sort((a, b) => {
             return a.localeCompare(b, 'zh-Hans-CN')
         })
         res.json(comicsAry);
     });
 });
 
-// API接口：获取指定漫画的所有集数
+app.get('/api/comicsDetail/:id', (req, res) => {
+    const id = req.params.id;
+    const pid = idToPidMap.get(id);
+    if (pid) {
+        return res.send('running')
+    }
+    // execute nodejs script to get response from that script 
+    const { spawn } = require('child_process');
+    const nodejsProgramPath = path.join('/home/ubuntu/code/scratchWeb/src', 'getContentList.js');
+    const process = spawn('node', [nodejsProgramPath, baseUrl + id]);
+    idToPidMap.set(id, process.pid)
+
+    process.stdout.on('data', (data) => {
+        console.log('data', data);
+        res.send(data.toString());
+    });
+    process.stderr.on('data', (data) => {
+        res.send(data.toString());
+    });
+    process.on('close', (code) => {
+        console.log(`child process exited with code ${code}`);
+        idToPidMap.delete(id)
+    });
+
+})
+
+app.get('/api/comics/apiList', (req, res) => {
+    const { spawn } = require('child_process');
+})
+
 app.get('/api/comics/:comicName', (req, res) => {
     const episodesDir = path.join(__dirname, 'manhua', req.params.comicName);
     fs.readdir(episodesDir, (err, files) => {
@@ -38,16 +65,15 @@ app.get('/api/comics/:comicName', (req, res) => {
             return;
         }
         res.json(files.sort((a, b) => {
- const matchA = a.match(/\d+/); // 提取字符串中的数字
-    const matchB = b.match(/\d+/);
-    const numA = matchA ? parseInt(matchA[0], 10) : 0; // 如果存在数字则转换为整数，否则默认为0
-    const numB = matchB ? parseInt(matchB[0], 10) : 0;
-    return numA - numB; // 根据数字升序排序
-}));
+            const matchA = a.match(/\d+/);
+            const matchB = b.match(/\d+/);
+            const numA = matchA ? parseInt(matchA[0], 10) : 0;
+            const numB = matchB ? parseInt(matchB[0], 10) : 0;
+            return numA - numB;
+        }));
     });
 });
 
-// API接口：获取指定漫画集的图片列表
 app.get('/api/comics/:comicName/:episode', (req, res) => {
     const imagesDir = path.join(__dirname, 'manhua', req.params.comicName, req.params.episode);
     fs.readdir(imagesDir, (err, files) => {
@@ -56,12 +82,12 @@ app.get('/api/comics/:comicName/:episode', (req, res) => {
             return;
         }
         res.json(files.sort((a, b) => {
- const matchA = a.match(/\d+/); // 提取字符串中的数字
-    const matchB = b.match(/\d+/);
-    const numA = matchA ? parseInt(matchA[0], 10) : 0; // 如果存在数字则转换为整数，否则默认为0
-    const numB = matchB ? parseInt(matchB[0], 10) : 0;
-    return numA - numB; // 根据数字升序排序
-}).map(file => `/static/manhua/${req.params.comicName}/${req.params.episode}/${file}`));
+            const matchA = a.match(/\d+/);
+            const matchB = b.match(/\d+/);
+            const numA = matchA ? parseInt(matchA[0], 10) : 0;
+            const numB = matchB ? parseInt(matchB[0], 10) : 0;
+            return numA - numB;
+        }).map(file => `/static/manhua/${req.params.comicName}/${req.params.episode}/${file}`));
     });
 });
 

@@ -93,7 +93,7 @@ function fetchComics() {
 				details.appendChild(episodesContainer);
 				comicsContainer.appendChild(details);
 
-				summary.addEventListener(action, () => {
+				summary.addEventListener('click', () => {
 					fetchEpisodes(comic, episodesContainer);
 					curComicName = comic;
 					document.getElementById('toggleEpisodesList').click();
@@ -288,7 +288,7 @@ function loadPreviousEpisode() {
 }
 
 
-document.getElementById('toggleComicsList').addEventListener(action, () => {
+document.getElementById('toggleComicsList').addEventListener('click', () => {
 	const comicsPanel = document.getElementById('comics');
 	// 切换comics面板的显示状态
 	if (comicsPanel.style.transform === 'translateX(0px)') {
