@@ -153,6 +153,11 @@ function loadImagesSequentially(imageUrls, container) {
 		reject = reject;
 	});
 	function loadImage() {
+			// no need to wait all images loaded
+			if(index > 10){
+				res();
+				hideLoading();
+			}
 			if (index < imageUrls.length) {
 					const imageUrl = imageUrls[index];
 					const img = document.createElement('img');
