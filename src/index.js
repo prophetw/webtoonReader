@@ -1,4 +1,4 @@
-const baseUrl = "http://192.168.1.11:3000";
+// const baseUrl = "http://192.168.1.11:3000";
 // const hostname = window.location.hostname;
 // const baseUrl = `http://${hostname}:3000`;
 // const baseUrl = "";
