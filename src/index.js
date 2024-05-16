@@ -1,7 +1,7 @@
-// const baseUrl = "http://192.168.1.11:3000";
+const baseUrl = "http://192.168.1.11:3000";
 // const hostname = window.location.hostname;
 // const baseUrl = `http://${hostname}:3000`;
-const baseUrl = "";
+// const baseUrl = "";
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 let action = isMobile ? 'touchstart' : 'click';
 
@@ -80,7 +80,7 @@ function fetchComics() {
 	showLoading();
 	fetch(`${baseUrl}/api/comics`)
 		.then(response => response.json())
-		.then(comics => {
+		.then(async comics => {
 			const comicsContainer = document.getElementById('comics');
 			comicsContainer.innerHTML = '';
 			comics.forEach(comic => {
@@ -88,18 +88,46 @@ function fetchComics() {
 				const summary = document.createElement('summary');
 				summary.textContent = comic;
 				details.appendChild(summary);
-				const episodesContainer = document.createElement('div');
-				episodesContainer.id = `episodes-${comic}`;
-				details.appendChild(episodesContainer);
+				// const episodesContainer = document.createElement('div');
+				// episodesContainer.id = `episodes-${comic}`;
+				// details.appendChild(episodesContainer);
 				comicsContainer.appendChild(details);
 
 				summary.addEventListener('click', () => {
-					fetchEpisodes(comic, episodesContainer);
+					fetchEpisodes(comic);
 					curComicName = comic;
 					document.getElementById('toggleEpisodesList').click();
 				});
 			});
 			hideLoading();
+			try {
+				const lastReadInfoStr = localStorage.getItem('lastReadInfo');
+				if(lastReadInfoStr){
+					const lastReadInfo = JSON.parse(lastReadInfoStr);
+					const {comicName, episode} = lastReadInfo;
+
+					const isConfirmed = await confirm('请确认', `上次阅读到${comicName}-${episode}, 是否需要定位到该位置?`, 4000, false)
+					if(isConfirmed){
+						curComicName = comicName;
+						await fetchEpisodes(comicName);
+						curComicEpisode = episode;
+						fetchImages(comicName, episode);
+					}else{
+
+					}
+					// if(lastComicName === comicName && lastEpisode === episode){
+					// 	// 读取上次阅读的位置
+					// 	const lastReadPosition = localStorage.getItem('lastReadPosition');
+					// 	if(lastReadPosition){
+					// 		const scrollEle = document.getElementById('content');
+					// 		scrollEle.scrollTop = +lastReadPosition;
+					// 	}
+					// }
+				}
+				
+			} catch (error) {
+				
+			}
 		})
 		.catch(error => {
 			console.error('Error fetching comics:', error)
@@ -107,13 +135,12 @@ function fetchComics() {
 		});
 }
 
-function fetchEpisodes(comicName, episodesContainer) {
+function fetchEpisodes(comicName) {
 	showLoading();
 	fetch(`${baseUrl}/api/comics/${comicName}`)
 		.then(response => response.json())
 		.then(episodes => {
 			curEpisodesAry = episodes;
-			episodesContainer.innerHTML = '';
 			const episodesTitle = document.createElement('h2');
 			episodesTitle.textContent = 'Episodes';
 			const episodesDom = document.getElementById('episodes');
@@ -203,6 +230,14 @@ function fetchImages(comicName, episode, imagesContainer) {
 		warning('没有找到该集', 2000);
 		return 
 	}
+	try {
+		const lastReadInfo = {
+			comicName: comicName, episode: episode
+		}
+		localStorage.setItem('lastReadInfo', JSON.stringify(lastReadInfo));
+	} catch (error) {
+		
+	}
 	showLoading();
 	fetch(`${baseUrl}/api/comics/${comicName}/${episode}`)
 		.then(response => response.json())
@@ -229,7 +264,7 @@ function fetchImages(comicName, episode, imagesContainer) {
 }
 
 
-function confirm(title, message, duration) {
+function confirm(title, message, duration, dftResult = true) {
 	// notify user with a message and title for a duration 
 	// with two buttons, confirm and cancel  
 	// if confirm is clicked, return true, otherwise return false
@@ -242,25 +277,37 @@ function confirm(title, message, duration) {
 	confirmTitle.innerHTML = title;
 	confirmMessage.innerHTML = message;
 	confirmPanel.style.display = 'block';
+	let interval;
 	return new Promise((resolve, reject) => {
 		confirmBtn.onclick = () => {
 			confirmPanel.style.display = 'none';
+			duration = 0;
+			if(interval){
+				clearInterval(interval);
+				interval = null
+			}
 			resolve(true);
+			confirmPanel.style.display = 'none';
 		}
 		cancelBtn.onclick = () => {
 			confirmPanel.style.display = 'none';
+			duration = 0;
+			if(interval){
+				clearInterval(interval);
+				interval = null
+			}
 			resolve(false);
-		}
-		setTimeout(() => {
 			confirmPanel.style.display = 'none';
-			resolve(true);
-		}, duration);
+		}
 		// update rest time in message 
-		const interval = setInterval(() => {
+		interval = setInterval(() => {
 			duration -= 1000;
 			confirmMessage.innerHTML = `${message} <br> ${duration / 1000} seconds left`;
 			if (duration <= 0) {
 				clearInterval(interval);
+				interval = null
+				resolve(dftResult);
+				confirmPanel.style.display = 'none';
 			}
 		}, 1000);
 
@@ -272,7 +319,7 @@ function confirm(title, message, duration) {
 
 function loadNextEpisode(needConfirm = false) {
 	if(needConfirm){
-		confirm('自动播放下一集', '4秒之后自动播放下一集', 4000).then(isConfirmed => {
+		confirm('自动播放下一集', '3秒之后自动播放下一集', 3000).then(isConfirmed => {
 			if(isConfirmed){
 				curComicEpisode = (parseInt(curComicEpisode) + 1).toString();
 				const episodeName = curEpisodesAry[curComicEpisode];
@@ -391,12 +438,19 @@ function initSettings() {
 	scrollSpeed = localStorage.getItem('scrollSpeed') || 2;
 	scrollSpeed = +scrollSpeed;
 	autoNext = !!localStorage.getItem('autoNext');
+
+	lastReadInfo = !!localStorage.getItem('lastReadInfo');
+	console.log(' lastReadInfo ', lastReadInfo);
 	// update autoNext element checkbox 
 	const autoNextEle = document.getElementById('autoNext');
 	autoNextEle.checked = autoNext;
 	autoNextEle.addEventListener('change', (e) => {
 		autoNext = e.target.checked;
-		localStorage.setItem('autoNext', autoNext ? 1 : 0);
+		if(autoNext){
+			localStorage.setItem('autoNext', 1);
+		}else{
+			localStorage.removeItem('autoNext');
+		}
 	})
 
 	autoPlay = !!localStorage.getItem('autoPlay');
@@ -405,7 +459,11 @@ function initSettings() {
 	autoPlayEle.checked = autoPlay;
 	autoPlayEle.addEventListener('change', (e) => {
 		autoPlay = e.target.checked;
-		localStorage.setItem('autoPlay', autoPlay ? 1 : 0);
+		if(autoPlay){
+			localStorage.setItem('autoPlay', 1);
+		}else{
+			localStorage.removeItem('autoPlay');
+		}
 	})
 
 	const speedValListContainer = document.getElementById('speed-setting')
