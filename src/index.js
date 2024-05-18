@@ -1,7 +1,7 @@
 // const baseUrl = "http://192.168.1.11:3000";
 // const hostname = window.location.hostname;
 // const baseUrl = `http://${hostname}:3000`;
-// const baseUrl = "";
+const baseUrl = "";
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 let action = isMobile ? 'touchstart' : 'click';
 
@@ -110,7 +110,9 @@ function fetchComics() {
 					if(isConfirmed){
 						curComicName = comicName;
 						await fetchEpisodes(comicName);
-						curComicEpisode = episode;
+						curComicEpisode = curEpisodesAry.indexOf(episode);
+						// const episodeName = curEpisodesAry[curComicEpisode];
+						console.log(' curComicEpisode', curComicEpisode)
 						fetchImages(comicName, episode);
 					}else{
 
@@ -137,7 +139,7 @@ function fetchComics() {
 
 function fetchEpisodes(comicName) {
 	showLoading();
-	fetch(`${baseUrl}/api/comics/${comicName}`)
+	return fetch(`${baseUrl}/api/comics/${comicName}`)
 		.then(response => response.json())
 		.then(episodes => {
 			curEpisodesAry = episodes;
