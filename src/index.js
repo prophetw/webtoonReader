@@ -29,7 +29,7 @@ function hideAddressBar() {
 function smoothAutoScroll(element) {
 	var lastPosition = element.scrollTop;
 	isScrolling = true;
-  let consecutiveSamePositionCount = 0; // 连续相同位置的计数器
+	let consecutiveSamePositionCount = 0; // 连续相同位置的计数器
 
 	function scrollStep() {
 		if (element.scrollTop < element.scrollHeight - element.clientHeight) {
@@ -41,19 +41,21 @@ function smoothAutoScroll(element) {
 			} else {
 				consecutiveSamePositionCount++;
 				if (consecutiveSamePositionCount > 10) { // 假设连续10次位置不变表示滚动到底部
-						stopSmoothScroll(); // 停止动画
-						if (autoNext) {
-								loadNextEpisode(true);
-						}
+					stopSmoothScroll(); // 停止动画
+					if (autoNext) {
+						// loadNextEpisode(true);
+						loadNextEpisode();
+					}
 				} else {
-						scrollAnimationFrame = requestAnimationFrame(scrollStep);
+					scrollAnimationFrame = requestAnimationFrame(scrollStep);
 				}
 			}
 		} else {
 			stopSmoothScroll(); // 如果到达底部，停止动画
 			if (autoNext) {
-				if(element.scrollTop !== 0){
-					loadNextEpisode(true);
+				if (element.scrollTop !== 0) {
+					// loadNextEpisode(true);
+					loadNextEpisode();
 				}
 			}
 		}
@@ -102,19 +104,19 @@ function fetchComics() {
 			hideLoading();
 			try {
 				const lastReadInfoStr = localStorage.getItem('lastReadInfo');
-				if(lastReadInfoStr){
+				if (lastReadInfoStr) {
 					const lastReadInfo = JSON.parse(lastReadInfoStr);
-					const {comicName, episode} = lastReadInfo;
+					const { comicName, episode } = lastReadInfo;
 
 					const isConfirmed = await confirm('请确认', `上次阅读到${comicName}-${episode}, 是否需要定位到该位置?`, 4000, false)
-					if(isConfirmed){
+					if (isConfirmed) {
 						curComicName = comicName;
 						await fetchEpisodes(comicName);
 						curComicEpisode = curEpisodesAry.indexOf(episode);
 						// const episodeName = curEpisodesAry[curComicEpisode];
 						console.log(' curComicEpisode', curComicEpisode)
 						fetchImages(comicName, episode);
-					}else{
+					} else {
 
 					}
 					// if(lastComicName === comicName && lastEpisode === episode){
@@ -126,9 +128,9 @@ function fetchComics() {
 					// 	}
 					// }
 				}
-				
+
 			} catch (error) {
-				
+
 			}
 		})
 		.catch(error => {
@@ -182,33 +184,33 @@ function loadImagesSequentially(imageUrls, container) {
 		reject = reject;
 	});
 	function loadImage() {
-			// no need to wait all images loaded
-			if(index > 10){
-				res();
-				hideLoading();
-			}
-			if (index < imageUrls.length) {
-					const imageUrl = imageUrls[index];
-					const img = document.createElement('img');
-					if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-							img.src = imageUrl;
-					} else {
-							img.src = `${baseUrl}${imageUrl}`;
-					}
-					img.onload = () => {
-							container.appendChild(img);
-							index++;
-							loadImage();
-					};
-					img.onerror = () => {
-							console.error('Error loading image:', imageUrl);
-							index++;
-							loadImage();
-					};
+		// no need to wait all images loaded
+		if (index > 10) {
+			res();
+			hideLoading();
+		}
+		if (index < imageUrls.length) {
+			const imageUrl = imageUrls[index];
+			const img = document.createElement('img');
+			if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+				img.src = imageUrl;
 			} else {
-					res();
-					hideLoading();
+				img.src = `${baseUrl}${imageUrl}`;
 			}
+			img.onload = () => {
+				container.appendChild(img);
+				index++;
+				loadImage();
+			};
+			img.onerror = () => {
+				console.error('Error loading image:', imageUrl);
+				index++;
+				loadImage();
+			};
+		} else {
+			res();
+			hideLoading();
+		}
 	}
 	loadImage();
 	return promise;
@@ -228,9 +230,9 @@ function warning(message, duration) {
 
 
 function fetchImages(comicName, episode, imagesContainer) {
-	if(!episode){
+	if (!episode) {
 		warning('没有找到该集', 2000);
-		return 
+		return
 	}
 	try {
 		const lastReadInfo = {
@@ -238,7 +240,7 @@ function fetchImages(comicName, episode, imagesContainer) {
 		}
 		localStorage.setItem('lastReadInfo', JSON.stringify(lastReadInfo));
 	} catch (error) {
-		
+
 	}
 	showLoading();
 	fetch(`${baseUrl}/api/comics/${comicName}/${episode}`)
@@ -248,12 +250,12 @@ function fetchImages(comicName, episode, imagesContainer) {
 			document.getElementById('header').innerHTML = `${comicName} - ${episode}`;
 			imagesContainer = imagesContainer ? imagesContainer : document.getElementById('content');
 			imagesContainer.innerHTML = '';
-			if(autoPlay){
+			if (autoPlay) {
 				console.log(' autoPlay');
 				await loadImagesSequentially(images, imagesContainer);
 				hideLoading();
 				smoothAutoScroll(document.getElementById('content'));
-			}else{
+			} else {
 				loadImagesSequentially(images, imagesContainer);
 				hideLoading();
 			}
@@ -284,7 +286,7 @@ function confirm(title, message, duration, dftResult = true) {
 		confirmBtn.onclick = () => {
 			confirmPanel.style.display = 'none';
 			duration = 0;
-			if(interval){
+			if (interval) {
 				clearInterval(interval);
 				interval = null
 			}
@@ -294,7 +296,7 @@ function confirm(title, message, duration, dftResult = true) {
 		cancelBtn.onclick = () => {
 			confirmPanel.style.display = 'none';
 			duration = 0;
-			if(interval){
+			if (interval) {
 				clearInterval(interval);
 				interval = null
 			}
@@ -320,15 +322,16 @@ function confirm(title, message, duration, dftResult = true) {
 // })
 
 function loadNextEpisode(needConfirm = false) {
-	if(needConfirm){
+	stopSmoothScroll()
+	if (needConfirm) {
 		confirm('自动播放下一集', '3秒之后自动播放下一集', 3000).then(isConfirmed => {
-			if(isConfirmed){
+			if (isConfirmed) {
 				curComicEpisode = (parseInt(curComicEpisode) + 1).toString();
 				const episodeName = curEpisodesAry[curComicEpisode];
 				fetchImages(curComicName, episodeName);
 			}
 		});
-	}else{
+	} else {
 		curComicEpisode = (parseInt(curComicEpisode) + 1).toString();
 		const episodeName = curEpisodesAry[curComicEpisode];
 		fetchImages(curComicName, episodeName);
@@ -336,6 +339,7 @@ function loadNextEpisode(needConfirm = false) {
 }
 
 function loadPreviousEpisode() {
+	stopSmoothScroll()
 	curComicEpisode = (parseInt(curComicEpisode) - 1).toString();
 	const episodeName = curEpisodesAry[curComicEpisode];
 	fetchImages(curComicName, episodeName);
@@ -448,9 +452,9 @@ function initSettings() {
 	autoNextEle.checked = autoNext;
 	autoNextEle.addEventListener('change', (e) => {
 		autoNext = e.target.checked;
-		if(autoNext){
+		if (autoNext) {
 			localStorage.setItem('autoNext', 1);
-		}else{
+		} else {
 			localStorage.removeItem('autoNext');
 		}
 	})
@@ -461,13 +465,19 @@ function initSettings() {
 	autoPlayEle.checked = autoPlay;
 	autoPlayEle.addEventListener('change', (e) => {
 		autoPlay = e.target.checked;
-		if(autoPlay){
+		if (autoPlay) {
 			localStorage.setItem('autoPlay', 1);
-		}else{
+		} else {
 			localStorage.removeItem('autoPlay');
 		}
 	})
 
+
+	const dim = document.getElementById('dim')
+
+	dim.addEventListener('click', (e) => {
+setBrightness(50)
+})
 	const speedValListContainer = document.getElementById('speed-setting')
 	const speedList = [2, 3, 4, 5, 6, 7, 8, 16]
 	speedList.map(speed => {
@@ -504,10 +514,10 @@ document.body.addEventListener(action, (e) => {
 			})
 			target.classList.add('active');
 		}
-		if(target.id === 'back-to-top'){
+		if (target.id === 'back-to-top') {
 			scrollToTop();
 		}
-		if(target.id === 'back-to-bottom'){
+		if (target.id === 'back-to-bottom') {
 			scrollToBottom();
 		}
 
@@ -516,3 +526,42 @@ document.body.addEventListener(action, (e) => {
 
 // 初始化加载漫画列表
 document.addEventListener('DOMContentLoaded', fetchComics);
+
+let video;
+// 创建一个无声视频并播放
+function insertInvisibleVideo() {
+	// 创建一个video元素
+	video = document.createElement('video');
+
+	// 设置视频属性，使其无声且循环播放
+	video.setAttribute('playsinline', '');
+	video.setAttribute('muted', '');
+	video.setAttribute('loop', '');
+
+	// 添加一个透明的视频源
+	video.src = './demo.mp4';
+
+	// 将视频添加到页面中，但不显示
+	video.style.position = 'absolute';
+	video.style.width = '1px';
+	video.style.height = '1px';
+	video.style.opacity = '0';
+	document.body.appendChild(video);
+}
+
+function playInvisibleVideo() {
+	// 开始播放视频
+	video.play()
+		.catch(error => warning('Error attempting to play video:', 2000));
+}
+
+function stopInvisibleVideo() {
+	// 开始播放视频
+	video.stop()
+}
+
+insertInvisibleVideo();
+function setBrightness(value) {
+            document.body.style.filter = `brightness(${value}%)`;
+        }
+

@@ -3,7 +3,7 @@
 
 <head>
 	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 	<title>漫画</title>
 
 </head>
@@ -11,6 +11,8 @@
 	html,
 	body {
 		height: 100%;
+		overflow: hidden;
+transition: filter 0.3s ease;
 	}
 
 	body {
@@ -108,7 +110,7 @@
 		text-align: center;
 		background: #fff;
 		z-index: 4;
-		overflow: auto;
+		overflow-y: auto;
 	}
 
 	#header {
@@ -236,6 +238,7 @@
 		<div class="opt-item">
 			<button id="back-to-top">回到顶部</button>
 			<button id="back-to-bottom">回到底部</button>
+			<button id="dim">夜间模式</button>
 		</div>
 	</div>
 
