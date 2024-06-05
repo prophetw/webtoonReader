@@ -5,13 +5,13 @@ const path = require('path');
 const cors = require('cors');
 
 function generateUUIDv4() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
         var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
     });
 }
 
-const tagsFilePath = path.join(__dirname, 'tags.json');
+const tagsFilePath = path.join(__dirname, 'comicMeta.json');
 
 
 
@@ -19,6 +19,7 @@ app.use(cors());
 const baseUrl = `https://se8.us/index.php/chapter/`
 const taskIdToPInfoMap = new Map() // task id to process info map
 
+app.use(express.json());
 
 app.use('/static/manhua', express.static('manhua'));
 
@@ -38,7 +39,7 @@ app.use((req, res, next) => {
 });
 
 // 获取所有标签
-app.get('/api/tags', (req, res) => {
+app.get('/api/metaInfo', (req, res) => {
     fs.readFile(tagsFilePath, (err, data) => {
         if (err) {
             res.status(500).send('Error reading tags file.');
@@ -48,10 +49,10 @@ app.get('/api/tags', (req, res) => {
     });
 });
 
-// 更新特定漫画的标签
-app.post('/api/tags/:mangaName', (req, res) => {
+app.post('/api/updateTags/:mangaName', (req, res) => {
     const mangaName = req.params.mangaName;
     const newTags = req.body.tags; // 假设请求体中传递的是一个标签数组
+    console.log(' newTags ', newTags);
 
     // 读取现有的标签文件
     fs.readFile(tagsFilePath, (err, data) => {
@@ -61,18 +62,20 @@ app.post('/api/tags/:mangaName', (req, res) => {
         }
 
         // 解析现有的标签数据
-        const tagsData = JSON.parse(data);
+        const metaData = JSON.parse(data);
 
         // 更新特定漫画的标签
-	if(!tagsData[mangaName]){
-		tagsData[mangaName]
-	}
-        if(newTags && tagsData[mangaName].indexOf(newTags) === -1){
-        	tagsData[mangaName].push(newTags);
-	}
+        if (!metaData[mangaName]) {
+            metaData[mangaName] = {
+                tags: [],
+                cover: '',
+                score: 0,
+            }
+        }
+        metaData[mangaName].tags = newTags;
 
         // 写回修改后的标签数据到文件
-        fs.writeFile(tagsFilePath, JSON.stringify(tagsData), err => {
+        fs.writeFile(tagsFilePath, JSON.stringify(metaData, null, 2), err => {
             if (err) {
                 res.status(500).send('Error writing tags file.');
                 return;
@@ -81,6 +84,43 @@ app.post('/api/tags/:mangaName', (req, res) => {
         });
     });
 });
+
+// 更新特定漫画的标签
+app.post('/api/updateScores/:mangaName', (req, res) => {
+    const mangaName = req.params.mangaName;
+    const newScore = req.body.score; // 假设请求体中传递的是一个分数
+
+    // 读取现有的标签文件
+    fs.readFile(tagsFilePath, (err, data) => {
+        if (err) {
+            res.status(500).send('Error reading tags file.');
+            return;
+        }
+
+        // 解析现有的标签数据
+        const metaData = JSON.parse(data);
+
+        // 更新特定漫画的标签
+        if (!metaData[mangaName]) {
+            metaData[mangaName] = {
+                tags: [],
+                cover: '',
+                score: 0,
+            }
+        }
+        metaData[mangaName].score = newScore;
+
+        // 写回修改后的标签数据到文件
+        fs.writeFile(tagsFilePath, JSON.stringify(metaData, null, 2), err => {
+            if (err) {
+                res.status(500).send('Error writing tags file.');
+                return;
+            }
+            res.send(`Score for ${mangaName} updated successfully.`);
+        });
+    });
+})
+
 
 app.get('/api/comics', (req, res) => {
     const comicsDir = path.join(__dirname, 'manhua');
@@ -92,6 +132,7 @@ app.get('/api/comics', (req, res) => {
         const comicsAry = files.filter(name => !name.startsWith('.')).sort((a, b) => {
             return a.localeCompare(b, 'zh-Hans-CN')
         })
+        // fs.writeFileSync(path.join(__dirname, 'comicList.json'), JSON.stringify(comicsAry, null, 2))
         res.json(comicsAry);
     });
 });

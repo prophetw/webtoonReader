@@ -3,7 +3,7 @@
 
 <head>
 	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 	<title>漫画</title>
 
 <script defer src="bundle.js"></script></head>
@@ -11,6 +11,8 @@
 	html,
 	body {
 		height: 100%;
+		overflow: hidden;
+transition: filter 0.3s ease;
 	}
 
 	body {
@@ -108,7 +110,7 @@
 		text-align: center;
 		background: #fff;
 		z-index: 4;
-		overflow: auto;
+		overflow-y: auto;
 	}
 
 	#header {
@@ -202,6 +204,19 @@
 		box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 		z-index: 100;
 	}
+	.tags {
+		background: rgb(143 200 35 / 41%);
+    display: inline-block;
+    padding: 0 10px;
+    border-radius: 4px;
+	}
+	.score{
+		display: inline-block;
+		padding: 0 10px;
+		background: #007BFF;
+		color: white;
+		border-radius: 5px;
+	}
 </style>
 
 <body>
@@ -236,6 +251,20 @@
 		<div class="opt-item">
 			<button id="back-to-top">回到顶部</button>
 			<button id="back-to-bottom">回到底部</button>
+			<button id="dim">夜间模式</button>
+		</div>
+		<div class="opt-item">
+			<div>
+				当前漫画: <span id="curComicName"></span>
+			</div>
+			<div>
+				tags: <input id="tagInput" type="text" placeholder="填入 tags 剧情,嗷嗷" >
+				<button id="saveTag">保存</button>
+			</div>
+			<div>
+				评分：<input id="scoreInput" type="text" placeholder="填入分数" >
+				<button id="saveScore">保存</button>
+			</div>
 		</div>
 	</div>
 
