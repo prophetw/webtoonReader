@@ -78,8 +78,53 @@ function scrollToBottom() {
 	scrollEle.scrollTop = scrollEle.scrollHeight;
 }
 
-function fetchComics() {
+let comicMetaInfo
+
+function fetchComicsMetaInfo(){
+	return fetch(`${baseUrl}/api/metaInfo`)
+		.then(response => response.json())
+		.then(async metaInfo => {
+			console.log('cc ', metaInfo);
+			console.log('cc ', typeof metaInfo);
+			comicMetaInfo = metaInfo
+		})
+}
+
+function updateComicScore(score){
+	if(curComicName){
+		console.log(' score --- ', score);
+		fetch(`${baseUrl}/api/updateScores/${curComicName}`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({score})
+		}
+		).finally(()=>{
+			warning('评分更新成功', 2000)
+		})
+	}
+}
+
+function updateComicTags(tags){
+	if(curComicName){
+		console.log(' tags --- ', tags);
+		fetch(`${baseUrl}/api/updateTags/${curComicName}`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({tags})
+		}
+		).finally(()=>{
+			warning('tags更新成功', 2000)
+		})
+	}
+}
+
+async function fetchComics() {
 	showLoading();
+	await fetchComicsMetaInfo();
 	fetch(`${baseUrl}/api/comics`)
 		.then(response => response.json())
 		.then(async comics => {
@@ -88,7 +133,20 @@ function fetchComics() {
 			comics.forEach(comic => {
 				const details = document.createElement('details');
 				const summary = document.createElement('summary');
-				summary.textContent = comic;
+				if(comic){
+					const meta = comicMetaInfo[comic];
+					if(meta){
+						const {tags, score} = meta;
+						if(tags && tags.length > 0 || score !==0){
+							summary.innerHTML = `${comic} <span class="tags">${tags.join(',')}</span> <span class="score">评分：${score}</span>`;
+						}else{
+							summary.textContent = comic;
+						}
+					}else{
+						summary.textContent = comic;
+					}
+				}
+				// summary.textContent = comic;
 				details.appendChild(summary);
 				// const episodesContainer = document.createElement('div');
 				// episodesContainer.id = `episodes-${comic}`;
@@ -427,7 +485,26 @@ document.getElementById('play').addEventListener(action, e => {
 
 function initSettings() {
 	const settingBtn = document.getElementById('setting');
+	const curComicEle = document.getElementById('curComicName');
+	const tagInputEle = document.getElementById('tagInput');
+	const scoreInputEle = document.getElementById('scoreInput');
+	const saveTagEle = document.getElementById('saveTag');
+	const saveScoreEle = document.getElementById('saveScore');
 	const settingPanel = document.getElementById('settingPanel');
+	saveTagEle.addEventListener(action, () => {
+		const tags = tagInputEle.value.split(',');
+		if (comicMetaInfo) {
+			comicMetaInfo[curComicName].tags = tags;
+		}
+		updateComicTags(tags);
+	})
+	saveScoreEle.addEventListener(action, () => {
+		const score = scoreInputEle.value;
+		if (comicMetaInfo) {
+			comicMetaInfo[curComicName].score = score;
+		}
+		updateComicScore(score);
+	})
 	settingBtn.addEventListener(action, () => {
 		const isShow = settingPanel.style.transform === 'translateX(0px)';
 		if (isShow) {
@@ -438,6 +515,15 @@ function initSettings() {
 			settingPanel.style.transform = 'translateX(0px)';
 			hideComicPanel();
 			hideEpisodesPanel();
+		}
+		if(curComicName){
+			console.log(' curComicName ', curComicName);
+			curComicEle.textContent = curComicName;
+			if(comicMetaInfo && comicMetaInfo[curComicName]){
+				const {tags, score} = comicMetaInfo[curComicName];
+				tagInputEle.value = tags.join(',');
+				scoreInputEle.value = score;
+			}
 		}
 	})
 	// 初始化滚动速度
