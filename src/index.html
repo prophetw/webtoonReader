@@ -1,286 +1,306 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>漫画</title>
+  </head>
+  <style>
+    html,
+    body {
+      height: 100%;
+      overflow: hidden;
+      transition: filter 0.3s ease;
+    }
 
-<head>
-	<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-	<title>漫画</title>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 0;
+      margin: 0;
+      position: relative;
+    }
 
-</head>
-<style>
-	html,
-	body {
-		height: 100%;
-		overflow: hidden;
-transition: filter 0.3s ease;
-	}
+    .floating-button {
+      position: fixed;
+      z-index: 10;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
 
-	body {
-		font-family: Arial, sans-serif;
-		padding: 0;
-		margin: 0;
-		position: relative;
-	}
+    .floating-button:hover {
+      background-color: #0056b3;
+    }
 
-	.floating-button {
-		position: fixed;
-		z-index: 10;
-		padding: 10px 20px;
-		border: none;
-		border-radius: 5px;
-		background-color: #007BFF;
-		color: white;
-		cursor: pointer;
-		transition: background-color 0.3s;
-	}
+    .left {
+      top: 20px;
+      left: 10px;
+      transform: translateY(-50%);
+    }
 
-	.floating-button:hover {
-		background-color: #0056b3;
-	}
+    .right {
+      top: 20px;
+      right: 10px;
+      transform: translateY(-50%);
+    }
 
-	.left {
-		top: 20px;
-		left: 10px;
-		transform: translateY(-50%);
-	}
+    #prev.left,
+    #next.left {
+      top: auto;
+      bottom: 20px;
+    }
 
-	.right {
-		top: 20px;
-		right: 10px;
-		transform: translateY(-50%);
-	}
+    #prev.right,
+    #next.right {
+      top: auto;
+      bottom: 20px;
+    }
 
-	#prev.left,
-	#next.left {
-		top: auto;
-		bottom: 20px;
-	}
+    #play.right {
+      top: auto;
+      bottom: 50%;
+    }
 
-	#prev.right,
-	#next.right {
-		top: auto;
-		bottom: 20px;
-	}
+    #setting {
+      top: auto;
+      bottom: 50%;
+    }
 
-	#play.right {
-		top: auto;
-		bottom: 50%;
-	}
+    .list-panel {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      z-index: 5;
+      width: 250px;
+      overflow-y: auto;
+      background: #f0f0f0;
+      transform: translateX(-100%);
+      transition: transform 0.5s;
+      padding: 40px 10px;
+    }
 
-	#setting {
-		top: auto;
-		bottom: 50%;
-	}
+    .list-panel.right {
+      right: 0;
+      transform: translateX(100%);
+    }
 
-	.list-panel {
-		position: fixed;
-		top: 0;
-		bottom: 0;
-		z-index: 5;
-		width: 250px;
-		overflow-y: auto;
-		background: #f0f0f0;
-		transform: translateX(-100%);
-		transition: transform 0.5s;
-		padding: 40px 10px;
-	}
+    img {
+      margin: 0;
+      padding: 0;
+      display: flex;
+    }
 
-	.list-panel.right {
-		right: 0;
-		transform: translateX(100%);
-	}
+    .content-area {
+      position: absolute;
+      width: 100%;
+      height: calc(100% - 40px);
+      top: 40px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      /* display: flex; */
+      /* justify-content: center; */
+      /* align-items: center; */
+      text-align: center;
+      background: #fff;
+      z-index: 4;
+      overflow-y: auto;
+    }
 
-	img {
-		margin: 0;
-		padding: 0;
-		display: flex;
-	}
+    header{
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 40px;
+      background: #007bff;
+      color: white;
+      text-align: center;
+      line-height: 40px;
+      z-index: 3;
+    }
 
-	.content-area {
-		position: absolute;
-		width: 100%;
-		height: calc(100% - 40px);
-		top: 40px;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		/* display: flex; */
-		/* justify-content: center; */
-		/* align-items: center; */
-		text-align: center;
-		background: #fff;
-		z-index: 4;
-		overflow-y: auto;
-	}
+    img {
+      width: 100%;
+    }
 
-	#header {
-		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		height: 40px;
-		background: #007BFF;
-		color: white;
-		text-align: center;
-		line-height: 40px;
-		z-index: 3;
-	}
+    .play-speed {
+      display: inline-block;
+      width: 30px;
+      color: #333;
+      cursor: pointer;
+    }
 
-	img {
-		width: 100%;
-	}
+    .play-speed.active {
+      color: #007bff;
+    }
 
-	.play-speed {
-		display: inline-block;
-		width: 30px;
-		color: #333;
-		cursor: pointer;
-	}
+    .opt-item {
+      margin: 10px 0;
+    }
 
-	.play-speed.active {
-		color: #007BFF;
-	}
+    #loading {
+      display: none;
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
 
-	.opt-item {
-		margin: 10px 0;
-	}
+    .loading {
+      border: 8px solid #f3f3f3;
+      border-top: 8px solid #3498db;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 2s linear infinite;
+      margin: 20% auto;
+    }
 
-	#loading {
-		display: none;
-		position: absolute;
-		width: 100%;
-		height: 100%;
-		background: rgba(0, 0, 0, 0.5);
-		z-index: 100;
-		justify-content: center;
-		align-items: center;
-	}
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
 
-	.loading {
-		border: 8px solid #f3f3f3;
-		border-top: 8px solid #3498db;
-		border-radius: 50%;
-		width: 50px;
-		height: 50px;
-		animation: spin 2s linear infinite;
-		margin: 20% auto;
-	}
+      /* 初始状态：不旋转 */
+      100% {
+        transform: rotate(360deg);
+      }
 
-	@keyframes spin {
-		0% {
-			transform: rotate(0deg);
-		}
+      /* 最终状态：旋转一周（360度） */
+    }
+    #confirmPanel {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 300px;
+      background: #fff;
+      padding: 20px;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      z-index: 100;
+    }
+    #warningPanel {
+      display: none;
+      position: fixed;
+      top: 20%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 300px;
+      background: #fff;
+      padding: 20px;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      z-index: 100;
+    }
+    .tags {
+      background: rgb(143 200 35 / 41%);
+      display: inline-block;
+      padding: 0 10px;
+      border-radius: 4px;
+    }
+    .score {
+      display: inline-block;
+      padding: 0 10px;
+      background: #1a9406;
+      color: white;
+      border-radius: 5px;
+    }
+  </style>
 
-		/* 初始状态：不旋转 */
-		100% {
-			transform: rotate(360deg);
-		}
+  <body>
+    <header>
+      <button id="toggleComicsList" class="floating-button left">漫画列表</button>
+      <div id="header"></div>
+      <button id="toggleEpisodesList" class="floating-button right">
+        集数列表
+      </button>
+  </header>
+    <button id="prev" class="floating-button left">上一话</button>
+    <button id="next" class="floating-button right">下一话</button>
+    <button id="play" class="floating-button right">播放/暂停</button>
+    <button id="setting" class="floating-button left">设置</button>
+    <div id="loading">
+      <div class="loading"></div>
+    </div>
+    <!-- dropdown -->
+    <div id="settingPanel" class="list-panel right">
+      <h3>设置</h3>
+      <div id="speed-setting" class="opt-item">
+        <div>播放速度</div>
+      </div>
+      <div class="opt-item">
+        <label for="autoNext">自动下一话</label>
+        <input type="checkbox" id="autoNext" />
+      </div>
+      <div class="opt-item">
+        <label for="autoPlay">自动播放</label>
+        <input type="checkbox" id="autoPlay" />
+      </div>
+      <div class="opt-item">
+        <label for="autoNext">自动全屏</label>
+        <input type="checkbox" id="autoNext" /><br />
+      </div>
+      <div class="opt-item">
+        <button id="back-to-top">回到顶部</button>
+        <button id="back-to-bottom">回到底部</button>
+        <button id="dim">夜间模式</button>
+      </div>
+      <div class="opt-item">
+        <div>当前漫画: <span id="curComicName"></span></div>
+        <div>
+          tags:
+          <input id="tagInput" type="text" placeholder="填入 tags 剧情,嗷嗷" />
+          <button id="saveTag">保存</button>
+        </div>
+        <div>
+          评分：<input id="scoreInput" type="text" placeholder="填入分数" />
+          <button id="saveScore">保存</button>
+        </div>
+        <div>当前集数: <span id="curComicEpi"></span></div>
+        <div>
+          tags:
+          <input
+            id="tagInputEpi"
+            type="text"
+            placeholder="填入 tags 剧情,嗷嗷"
+          />
+          <button id="saveTagEpi">保存</button>
+        </div>
+        <div>
+          评分：<input id="scoreInputEpi" type="text" placeholder="填入分数" />
+          <button id="saveScoreEpi">保存</button>
+        </div>
+      </div>
+    </div>
 
-		/* 最终状态：旋转一周（360度） */
-	}
-	#confirmPanel{
-		display: none;
-		position: fixed;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		width: 300px;
-		background: #fff;
-		padding: 20px;
-		border-radius: 5px;
-		box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-		z-index: 100;
-	}
-	#warningPanel{
-		display: none;
-		position: fixed;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		width: 300px;
-		background: #fff;
-		padding: 20px;
-		border-radius: 5px;
-		box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-		z-index: 100;
-	}
-	.tags {
-		background: rgb(143 200 35 / 41%);
-    display: inline-block;
-    padding: 0 10px;
-    border-radius: 4px;
-	}
-	.score{
-		display: inline-block;
-		padding: 0 10px;
-		background: #007BFF;
-		color: white;
-		border-radius: 5px;
-	}
-</style>
-
-<body>
-	<button id="toggleComicsList" class="floating-button left">漫画列表</button>
-	<button id="toggleEpisodesList" class="floating-button right">集数列表</button>
-	<div id="header"></div>
-	<button id="prev" class="floating-button left">上一话</button>
-	<button id="next" class="floating-button right">下一话</button>
-	<button id="play" class="floating-button right">播放/暂停</button>
-	<button id="setting" class="floating-button left">设置</button>
-	<div id="loading">
-		<div class="loading"></div>
-	</div>
-	<!-- dropdown -->
-	<div id="settingPanel" class="list-panel right">
-		<h3>设置</h3>
-		<div id="speed-setting" class="opt-item">
-			<div>播放速度</div>
-		</div>
-		<div class="opt-item">
-			<label for="autoNext">自动下一话</label>
-			<input type="checkbox" id="autoNext">
-		</div>
-		<div class="opt-item">
-			<label for="autoPlay">自动播放</label>
-			<input type="checkbox" id="autoPlay">
-		</div>
-		<div class="opt-item">
-			<label for="autoNext">自动全屏</label>
-			<input type="checkbox" id="autoNext"><br>
-		</div>
-		<div class="opt-item">
-			<button id="back-to-top">回到顶部</button>
-			<button id="back-to-bottom">回到底部</button>
-			<button id="dim">夜间模式</button>
-		</div>
-		<div class="opt-item">
-			<div>
-				当前漫画: <span id="curComicName"></span>
-			</div>
-			<div>
-				tags: <input id="tagInput" type="text" placeholder="填入 tags 剧情,嗷嗷" >
-				<button id="saveTag">保存</button>
-			</div>
-			<div>
-				评分：<input id="scoreInput" type="text" placeholder="填入分数" >
-				<button id="saveScore">保存</button>
-			</div>
-		</div>
-	</div>
-
-	<div id="comics" class="list-panel"></div>
-	<div id="episodes" class="list-panel"></div>
-	<div id="content" class="content-area">请选择一个漫画和集数来开始阅读。</div>
-	<div id="confirmPanel">
-		<h3 id="confirmTitle"></h3>
-		<h5 id="confirmMessage"></h5>
-		<div>
-			<button id="confirmBtn">确定</button>
-			<button id="cancelBtn">取消</button>
-		</div>
-	</div>
-	<div id="warningPanel">
-		<div id="warningMessage"></div>
-	</div>
-</body>
+    <div id="comics" class="list-panel"></div>
+    <div id="episodes" class="list-panel"></div>
+    <div id="content" class="content-area">
+      请选择一个漫画和集数来开始阅读。
+    </div>
+    <div id="confirmPanel">
+      <h3 id="confirmTitle"></h3>
+      <h5 id="confirmMessage"></h5>
+      <div>
+        <button id="confirmBtn">确定</button>
+        <button id="cancelBtn">取消</button>
+      </div>
+    </div>
+    <div id="warningPanel">
+      <div id="warningMessage"></div>
+    </div>
+  </body>
 </html>
