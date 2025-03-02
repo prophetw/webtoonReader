@@ -3,12 +3,11 @@ import api from './api.js';
 import ui from './ui.js';
 import scroll from './scroll.js';
 import imageLoader from './imageLoader.js';
+import utils from './utils.js';
 
-// Device detection for event handling
-const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-  navigator.userAgent
-);
-const action = isMobile ? 'touchstart' : 'click';
+// Use more reliable touch detection
+const isMobile = utils.isTouchDevice();
+const action = isMobile ? 'touchend' : 'click';
 
 // State management
 const state = {
@@ -17,7 +16,10 @@ const state = {
   curEpisodesAry: [],
   comicMetaInfo: {},
   summaryEleMap: new Map(),
-  mediaControls: null
+  mediaControls: null,
+  touchStartX: 0,
+  touchStartY: 0,
+  touchStartTime: 0
 };
 
 // Initialize media controls for keeping screen active
@@ -40,6 +42,7 @@ async function displayComics(comics) {
   comics.forEach((comic) => {
     const details = document.createElement('details');
     const summary = document.createElement('summary');
+    summary.setAttribute('data-comic', comic);
     state.summaryEleMap.set(comic, summary);
     
     if (comic) {
@@ -58,12 +61,6 @@ async function displayComics(comics) {
     
     details.appendChild(summary);
     comicsContainer.appendChild(details);
-    
-    summary.addEventListener(action, () => {
-      state.curComicName = comic;
-      loadEpisodes(comic);
-      document.getElementById('toggleEpisodesList').click();
-    });
   });
   
   ui.hideAddressBar();
@@ -101,14 +98,12 @@ async function loadEpisodes(comicName) {
     state.curEpisodesAry.forEach((episode, index) => {
       const episodeDiv = document.createElement('div');
       episodeDiv.textContent = episode;
+      episodeDiv.setAttribute('data-index', index);
+      episodeDiv.setAttribute('data-episode', episode);
       episodesDom.appendChild(episodeDiv);
-      
-      episodeDiv.onclick = () => {
-        state.curComicEpisode = index;
-        loadImages(comicName, episode);
-        document.getElementById('toggleEpisodesList').click();
-      };
     });
+    
+    ui.togglePanel('episodes');
   } catch (error) {
     console.error('Error fetching episodes:', error);
     ui.warning('加载章节列表失败', 2000);
@@ -156,31 +151,25 @@ async function loadImages(comicName, episode, imagesContainer = null) {
     // Load images with improved loader
     await imageLoader.loadImagesSequentially(images, container);
     
-    // Add a THROTTLED scroll event listener to load more images as user scrolls
-    // This prevents multiple rapid calls when scrolling
-    let isThrottled = false;
-    const scrollHandler = () => {
-      if (isThrottled) return;
+    // Add a throttled scroll event listener
+    const scrollHandler = utils.throttle(() => {
+      // Check if we're near bottom
+      const scrollPosition = container.scrollTop + container.clientHeight;
+      const scrollTotal = container.scrollHeight;
+      const scrollPercent = (scrollPosition / scrollTotal) * 100;
       
-      isThrottled = true;
-      setTimeout(() => {
-        isThrottled = false;
-        
-        // Check if we're near bottom
-        const scrollPosition = container.scrollTop + container.clientHeight;
-        const scrollTotal = container.scrollHeight;
-        const scrollPercent = (scrollPosition / scrollTotal) * 100;
-        
-        if (scrollPercent > 70) {  // Load more when 70% scrolled
-          console.log('Scroll threshold reached, loading more images');
-          imageLoader.loadAllImages(container);
-        }
-      }, 200); // Only run every 200ms at most
-    };
+      if (scrollPercent > 70) {
+        console.log('Scroll threshold reached, loading more images');
+        imageLoader.loadAllImages(container);
+      }
+    }, 250);
     
     // Store the handler so we can remove it later
     scrollHandlers.set(container, scrollHandler);
     container.addEventListener('scroll', scrollHandler);
+    
+    // Hide episodes panel
+    ui.hideAllPanels();
     
     // Start auto-scrolling if autoPlay is enabled
     if (config.autoPlay) {
@@ -257,6 +246,11 @@ function loadNextEpisode(needConfirm = false) {
   
   const nextEpisode = async () => {
     state.curComicEpisode = parseInt(state.curComicEpisode) + 1;
+    if (state.curComicEpisode >= state.curEpisodesAry.length) {
+      ui.warning('已经是最后一集了', 2000);
+      return;
+    }
+    
     const episodeName = state.curEpisodesAry[state.curComicEpisode];
     if (episodeName) {
       await loadImages(state.curComicName, episodeName);
@@ -289,6 +283,101 @@ function loadPreviousEpisode() {
   }
 }
 
+function handleTouchStart(e) {
+  state.touchStartX = e.touches[0].clientX;
+  state.touchStartY = e.touches[0].clientY;
+  state.touchStartTime = Date.now();
+}
+
+function handleTouchEnd(e, elementHandler) {
+  const touchEndX = e.changedTouches[0].clientX;
+  const touchEndY = e.changedTouches[0].clientY;
+  const touchEndTime = Date.now();
+  
+  const touchDuration = touchEndTime - state.touchStartTime;
+  const touchDistance = Math.sqrt(
+    Math.pow(touchEndX - state.touchStartX, 2) + 
+    Math.pow(touchEndY - state.touchStartY, 2)
+  );
+  
+  const minSwipeDistance = 50;
+  const maxTapDistance = 10;
+  const maxTapDuration = 200;
+  
+  // If it's a tap (short duration, minimal movement)
+  if (touchDuration < maxTapDuration && touchDistance < maxTapDistance) {
+    if (elementHandler) {
+      elementHandler(e);
+    }
+    return;
+  }
+  
+  // If it's a swipe
+  if (touchDistance > minSwipeDistance) {
+    const horizontalDistance = touchEndX - state.touchStartX;
+    const verticalDistance = Math.abs(touchEndY - state.touchStartY);
+    
+    // Only handle horizontal swipes
+    if (Math.abs(horizontalDistance) > verticalDistance) {
+      e.preventDefault();
+      
+      // Determine direction
+      if (horizontalDistance > 0) {
+        // Right swipe
+        loadPreviousEpisode();
+      } else {
+        // Left swipe
+        loadNextEpisode();
+      }
+    }
+  }
+}
+
+function initMobileInteractions() {
+  if (!isMobile) return;
+  
+  const content = document.getElementById('content');
+  content.addEventListener('touchstart', handleTouchStart, { passive: true });
+  content.addEventListener('touchend', (e) => handleTouchEnd(e), { passive: false });
+  
+  // Handle comic selection
+  const comics = document.getElementById('comics');
+  comics.addEventListener('touchend', (e) => {
+    // Find the clicked comic summary
+    const summary = e.target.closest('summary');
+    if (summary) {
+      const comicName = summary.getAttribute('data-comic');
+      if (comicName) {
+        state.curComicName = comicName;
+        loadEpisodes(comicName);
+      }
+    }
+  });
+  
+  // Handle episode selection
+  const episodes = document.getElementById('episodes');
+  episodes.addEventListener('touchend', (e) => {
+    if (e.target.tagName === 'DIV') {
+      const index = e.target.getAttribute('data-index');
+      const episode = e.target.getAttribute('data-episode');
+      if (index !== null && episode) {
+        state.curComicEpisode = parseInt(index);
+        loadImages(state.curComicName, episode);
+      }
+    }
+  });
+  
+  // Add touch feedback
+  document.body.addEventListener('touchstart', (e) => {
+    // Only add feedback for certain elements
+    if (e.target.classList.contains('floating-button') || 
+        e.target.tagName === 'SUMMARY' || 
+        (e.target.tagName === 'DIV' && e.target.parentElement.id === 'episodes')) {
+      utils.addTouchFeedback(e);
+    }
+  }, { passive: true });
+}
+
 function initEventListeners() {
   // Panel toggle buttons
   document.getElementById('toggleComicsList').addEventListener(action, () => {
@@ -312,6 +401,33 @@ function initEventListeners() {
       }
     }
   });
+  
+  // For non-mobile devices, add regular click events
+  if (!isMobile) {
+    // Comics list click handler
+    document.getElementById('comics').addEventListener('click', (e) => {
+      const summary = e.target.closest('summary');
+      if (summary) {
+        const comicName = summary.getAttribute('data-comic');
+        if (comicName) {
+          state.curComicName = comicName;
+          loadEpisodes(comicName);
+        }
+      }
+    });
+    
+    // Episodes list click handler
+    document.getElementById('episodes').addEventListener('click', (e) => {
+      if (e.target.tagName === 'DIV') {
+        const index = e.target.getAttribute('data-index');
+        const episode = e.target.getAttribute('data-episode');
+        if (index !== null && episode) {
+          state.curComicEpisode = parseInt(index);
+          loadImages(state.curComicName, episode);
+        }
+      }
+    });
+  }
   
   // Navigation buttons
   document.getElementById('next').addEventListener(action, () => loadNextEpisode());
@@ -379,9 +495,11 @@ function initEventListeners() {
   // Set initial checkbox states
   document.getElementById('autoNext').checked = config.autoNext;
   document.getElementById('autoPlay').checked = config.autoPlay;
+  
+  // Initialize mobile interactions
+  initMobileInteractions();
 }
 
-// Initialize speed selection UI
 function initSpeedSettings() {
   const speedValListContainer = document.getElementById('speed-setting');
   const speedList = [2, 3, 4, 5, 6, 7, 8, 16];
@@ -398,7 +516,6 @@ function initSpeedSettings() {
   });
 }
 
-// Main initialization
 async function initialize() {
   try {
     const comics = await loadNecessaryData();
@@ -410,11 +527,12 @@ async function initialize() {
     initEventListeners();
     
     state.mediaControls.play();
+    
+    console.log("App initialized, running on " + (isMobile ? "mobile" : "desktop"));
   } catch (error) {
     console.error('Initialization error:', error);
-    ui.warning('初始化失败', 3000);
+    ui.warning('初始化失败: ' + error.message, 3000);
   }
 }
 
-// Start the app when DOM is ready
 document.addEventListener('DOMContentLoaded', initialize);

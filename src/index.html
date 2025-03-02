@@ -257,6 +257,52 @@
       border-radius: 5px;
       display: none; /* Set to block for debugging */
     }
+
+    /* Mobile interaction improvements */
+    .floating-button.active {
+      background-color: #0056b3;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+    }
+    
+    /* Better tap targets for mobile */
+    .list-panel > div, .list-panel summary {
+      padding: 10px 5px;
+      margin: 2px 0;
+      cursor: pointer;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .list-panel > div:active, .list-panel summary:active {
+      background-color: rgba(0, 123, 255, 0.1);
+    }
+    
+    .active-panel {
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Add visual feedback for touch */
+    .touch-feedback {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.5);
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      opacity: 0;
+      animation: touch-ripple 0.6s ease-out;
+    }
+    
+    @keyframes touch-ripple {
+      0% { opacity: 1; transform: translate(-50%, -50%) scale(0.35); }
+      100% { opacity: 0; transform: translate(-50%, -50%) scale(1); }
+    }
+    
+    /* Better scrolling experience */
+    .content-area, .list-panel {
+      -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+      scrollbar-width: thin;
+    }
   </style>
 
   <body>

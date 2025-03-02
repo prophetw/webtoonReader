@@ -97,16 +97,45 @@ const ui = {
     if (!isVisible) {
       if (panelId === 'comics' || panelId === 'episodes') {
         panel.style.transform = 'translateX(0px)';
+        // Add active class to help with styling and event detection
+        panel.classList.add('active-panel');
       } else if (panelId === 'settingPanel') {
         panel.style.transform = 'translateX(0px)';
+        panel.classList.add('active-panel');
       }
     }
+    
+    // Update the UI to reflect which panel is active
+    this.updatePanelToggles(panelId, !isVisible);
   },
   
   hideAllPanels() {
-    document.getElementById('comics').style.transform = 'translateX(-100%)';
-    document.getElementById('episodes').style.transform = 'translateX(-100%)';
-    document.getElementById('settingPanel').style.transform = 'translateX(100%)';
+    const panels = document.querySelectorAll('.list-panel');
+    panels.forEach(panel => {
+      if (panel.id === 'comics' || panel.id === 'episodes') {
+        panel.style.transform = 'translateX(-100%)';
+      } else if (panel.id === 'settingPanel') {
+        panel.style.transform = 'translateX(100%)';
+      }
+      panel.classList.remove('active-panel');
+    });
+  },
+  
+  updatePanelToggles(activePanelId, isActive) {
+    // Update toggle buttons to reflect active state
+    const comicsToggle = document.getElementById('toggleComicsList');
+    const episodesToggle = document.getElementById('toggleEpisodesList');
+    
+    if (activePanelId === 'comics' && isActive) {
+      comicsToggle.classList.add('active');
+      episodesToggle.classList.remove('active');
+    } else if (activePanelId === 'episodes' && isActive) {
+      episodesToggle.classList.add('active');
+      comicsToggle.classList.remove('active');
+    } else {
+      comicsToggle.classList.remove('active');
+      episodesToggle.classList.remove('active');
+    }
   },
   
   setupMediaControls() {
