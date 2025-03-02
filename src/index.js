@@ -19,7 +19,11 @@ const state = {
   mediaControls: null,
   touchStartX: 0,
   touchStartY: 0,
-  touchStartTime: 0
+  touchStartTime: 0,
+  touchMoved: false,
+  minSwipeDistance: 30,
+  maxTapDistance: 10,
+  maxTapDuration: 300
 };
 
 // Initialize media controls for keeping screen active
@@ -287,6 +291,21 @@ function handleTouchStart(e) {
   state.touchStartX = e.touches[0].clientX;
   state.touchStartY = e.touches[0].clientY;
   state.touchStartTime = Date.now();
+  state.touchMoved = false;
+}
+
+function handleTouchMove(e) {
+  if (!state.touchStartX) return;
+  
+  const moveX = e.touches[0].clientX;
+  const moveY = e.touches[0].clientY;
+  const distX = Math.abs(moveX - state.touchStartX);
+  const distY = Math.abs(moveY - state.touchStartY);
+  
+  // If moved more than the threshold, mark as moved
+  if (distX > state.maxTapDistance || distY > state.maxTapDistance) {
+    state.touchMoved = true;
+  }
 }
 
 function handleTouchEnd(e, elementHandler) {
@@ -295,54 +314,61 @@ function handleTouchEnd(e, elementHandler) {
   const touchEndTime = Date.now();
   
   const touchDuration = touchEndTime - state.touchStartTime;
-  const touchDistance = Math.sqrt(
-    Math.pow(touchEndX - state.touchStartX, 2) + 
-    Math.pow(touchEndY - state.touchStartY, 2)
-  );
+  const horizontalDistance = touchEndX - state.touchStartX;
+  const verticalDistance = touchEndY - state.touchStartY;
+  const absHorizontal = Math.abs(horizontalDistance);
+  const absVertical = Math.abs(verticalDistance);
   
-  const minSwipeDistance = 50;
-  const maxTapDistance = 10;
-  const maxTapDuration = 200;
-  
-  // If it's a tap (short duration, minimal movement)
-  if (touchDuration < maxTapDuration && touchDistance < maxTapDistance) {
+  // Only process as a tap if:
+  // 1. Didn't move much during touch
+  // 2. Touch was short duration
+  if (!state.touchMoved && touchDuration < state.maxTapDuration) {
+    console.log("Processing as tap");
     if (elementHandler) {
       elementHandler(e);
     }
     return;
   }
   
-  // If it's a swipe
-  if (touchDistance > minSwipeDistance) {
-    const horizontalDistance = touchEndX - state.touchStartX;
-    const verticalDistance = Math.abs(touchEndY - state.touchStartY);
+  // Only process as a swipe if:
+  // 1. Moved enough distance
+  // 2. Horizontal movement was greater than vertical (to avoid triggering on normal scrolling)
+  if (absHorizontal > state.minSwipeDistance && absHorizontal > absVertical * 1.2) {
+    console.log("Processing as swipe");
     
-    // Only handle horizontal swipes
-    if (Math.abs(horizontalDistance) > verticalDistance) {
-      e.preventDefault();
-      
-      // Determine direction
-      if (horizontalDistance > 0) {
-        // Right swipe
-        loadPreviousEpisode();
-      } else {
-        // Left swipe
-        loadNextEpisode();
-      }
+    // Prevent default only for horizontal swipes to avoid interfering with vertical scrolling
+    e.preventDefault();
+    
+    // Determine direction
+    if (horizontalDistance > 0) {
+      // Right swipe
+      loadPreviousEpisode();
+    } else {
+      // Left swipe
+      loadNextEpisode();
     }
   }
+  
+  // Reset touch state
+  state.touchMoved = false;
 }
 
 function initMobileInteractions() {
   if (!isMobile) return;
   
+  // Content area touch handling for navigation
   const content = document.getElementById('content');
   content.addEventListener('touchstart', handleTouchStart, { passive: true });
+  content.addEventListener('touchmove', handleTouchMove, { passive: true });
   content.addEventListener('touchend', (e) => handleTouchEnd(e), { passive: false });
   
-  // Handle comic selection
+  // Handle comic selection with proper tap detection
   const comics = document.getElementById('comics');
+  comics.addEventListener('touchstart', handleTouchStart, { passive: true });
+  comics.addEventListener('touchmove', handleTouchMove, { passive: true });
   comics.addEventListener('touchend', (e) => {
+    if (state.touchMoved) return; // Skip if this was a drag/scroll operation
+    
     // Find the clicked comic summary
     const summary = e.target.closest('summary');
     if (summary) {
@@ -354,9 +380,13 @@ function initMobileInteractions() {
     }
   });
   
-  // Handle episode selection
+  // Handle episode selection with proper tap detection
   const episodes = document.getElementById('episodes');
+  episodes.addEventListener('touchstart', handleTouchStart, { passive: true });
+  episodes.addEventListener('touchmove', handleTouchMove, { passive: true });
   episodes.addEventListener('touchend', (e) => {
+    if (state.touchMoved) return; // Skip if this was a drag/scroll operation
+    
     if (e.target.tagName === 'DIV') {
       const index = e.target.getAttribute('data-index');
       const episode = e.target.getAttribute('data-episode');
@@ -367,10 +397,28 @@ function initMobileInteractions() {
     }
   });
   
-  // Add touch feedback
+  // Better button handling for mobile
+  const buttons = document.querySelectorAll('.floating-button, button');
+  buttons.forEach(button => {
+    button.addEventListener('touchstart', handleTouchStart, { passive: true });
+    button.addEventListener('touchmove', handleTouchMove, { passive: true });
+    button.addEventListener('touchend', (e) => {
+      if (state.touchMoved) {
+        e.preventDefault(); // Prevent click if it was a drag
+        return;
+      }
+      
+      // Add visual feedback for buttons
+      button.classList.add('active');
+      setTimeout(() => button.classList.remove('active'), 200);
+    }, { passive: false });
+  });
+  
+  // Add touch feedback with better filtering
   document.body.addEventListener('touchstart', (e) => {
     // Only add feedback for certain elements
     if (e.target.classList.contains('floating-button') || 
+        e.target.tagName === 'BUTTON' ||
         e.target.tagName === 'SUMMARY' || 
         (e.target.tagName === 'DIV' && e.target.parentElement.id === 'episodes')) {
       utils.addTouchFeedback(e);

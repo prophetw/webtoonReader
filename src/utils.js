@@ -10,13 +10,18 @@ const utils = {
     const touch = e.changedTouches[0];
     const ripple = document.createElement('div');
     ripple.className = 'touch-feedback';
+    
+    // Position the ripple precisely where the touch happened
     ripple.style.left = touch.clientX + 'px';
     ripple.style.top = touch.clientY + 'px';
+    
+    // Add the ripple to the DOM
     document.body.appendChild(ripple);
     
+    // Remove after animation completes
     setTimeout(() => {
       ripple.remove();
-    }, 600); // Remove after animation finishes
+    }, 600);
   },
   
   /**
@@ -35,6 +40,23 @@ const utils = {
    */
   isPortraitMode() {
     return window.matchMedia("(orientation: portrait)").matches;
+  },
+  
+  /**
+   * Check if an event is a tap or a drag
+   * @param {Object} startCoords - Starting touch coordinates
+   * @param {Object} endCoords - Ending touch coordinates
+   * @param {number} duration - Touch duration in ms
+   * @param {number} maxDistance - Maximum distance for a tap
+   * @param {number} maxDuration - Maximum duration for a tap
+   * @returns {boolean} True if the event is a tap
+   */
+  isTap(startCoords, endCoords, duration, maxDistance = 10, maxDuration = 200) {
+    const distance = Math.sqrt(
+      Math.pow(endCoords.x - startCoords.x, 2) + 
+      Math.pow(endCoords.y - startCoords.y, 2)
+    );
+    return distance <= maxDistance && duration <= maxDuration;
   },
   
   /**
@@ -64,6 +86,18 @@ const utils = {
         setTimeout(() => inThrottle = false, limit);
       }
     };
+  },
+  
+  /**
+   * Prevent default for an event
+   * @param {Event} e - The event to prevent default on
+   */
+  preventDefaultEvent(e) {
+    if (e && e.preventDefault) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    return false;
   }
 };
 
