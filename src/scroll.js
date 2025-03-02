@@ -1,4 +1,5 @@
 import config from './config.js';
+import imageLoader from './imageLoader.js';
 
 const scroll = {
   isScrolling: false,
@@ -8,10 +9,15 @@ const scroll = {
     let lastPosition = element.scrollTop;
     this.isScrolling = true;
     let consecutiveSamePositionCount = 0;
+    
+    // Load all images as we start scrolling
+    imageLoader.loadAllImages(element);
   
     const scrollStep = () => {
       if (element.scrollTop < element.scrollHeight - element.clientHeight) {
         element.scrollTop += config.scrollSpeed;
+        
+        // Check if scroll position changed
         if (element.scrollTop !== lastPosition) {
           lastPosition = element.scrollTop;
           consecutiveSamePositionCount = 0;
@@ -28,6 +34,12 @@ const scroll = {
             this.scrollAnimationFrame = requestAnimationFrame(scrollStep);
           }
         }
+        
+        // Check if we need to load more images
+        const scrollPercent = (element.scrollTop / (element.scrollHeight - element.clientHeight)) * 100;
+        if (scrollPercent > 50) {
+          imageLoader.loadAllImages(element);
+        }
       } else {
         this.stopSmoothScroll();
         if (config.autoNext && typeof onComplete === 'function') {
@@ -40,7 +52,10 @@ const scroll = {
   },
   
   stopSmoothScroll() {
-    cancelAnimationFrame(this.scrollAnimationFrame);
+    if (this.scrollAnimationFrame) {
+      cancelAnimationFrame(this.scrollAnimationFrame);
+      this.scrollAnimationFrame = null;
+    }
     this.isScrolling = false;
   },
   
@@ -50,6 +65,8 @@ const scroll = {
   
   scrollToBottom(element) {
     element.scrollTop = element.scrollHeight;
+    // When scrolling to bottom, make sure all images are loaded
+    imageLoader.loadAllImages(element);
   }
 };
 

@@ -133,17 +133,36 @@ async function loadImages(comicName, episode, imagesContainer = null) {
     document.getElementById('header').innerHTML = `${comicName} - ${episode}`;
     
     const container = imagesContainer || document.getElementById('content');
-    container.innerHTML = '';
     
     // Debug output
     console.log(`Fetched ${images.length} images for ${comicName} - ${episode}`);
-    console.log('Sample image URL:', images[0]);
+    if (images.length > 0) {
+      console.log('First image URL:', images[0]);
+      console.log('Last image URL:', images[images.length - 1]);
+    }
     
-    // Set up error handling for the container
+    // Setup error handling for the container
     imageLoader.setupImageErrorHandling(container);
     
-    // Load images with our improved loader
+    // Make sure container is scrolled to top
+    container.scrollTop = 0;
+    
+    // Load images with improved loader
     await imageLoader.loadImagesSequentially(images, container);
+    
+    // Add a scroll event listener to load more images as user scrolls
+    const scrollHandler = () => {
+      // Check if we're near bottom
+      const scrollPosition = container.scrollTop + container.clientHeight;
+      const scrollTotal = container.scrollHeight;
+      const scrollPercent = (scrollPosition / scrollTotal) * 100;
+      
+      if (scrollPercent > 70) {  // Load more when 70% scrolled
+        imageLoader.loadAllImages(container);
+      }
+    };
+    
+    container.addEventListener('scroll', scrollHandler);
     
     // Start auto-scrolling if autoPlay is enabled
     if (config.autoPlay) {
@@ -296,7 +315,9 @@ function initEventListeners() {
   });
   
   document.getElementById('back-to-bottom').addEventListener(action, () => {
-    scroll.scrollToBottom(document.getElementById('content'));
+    const contentElement = document.getElementById('content');
+    scroll.scrollToBottom(contentElement);
+    imageLoader.loadAllImages(contentElement);
   });
   
   // Settings checkboxes

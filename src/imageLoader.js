@@ -4,105 +4,115 @@ import ui from './ui.js';
 const imageLoader = {
   loadImagesSequentially(imageUrls, container) {
     return new Promise((resolve) => {
-      let index = 0;
+      // Clear any previous images
+      container.innerHTML = '';
+      console.log(`Starting to load ${imageUrls.length} images`);
       
-      // Create an Intersection Observer for lazy loading
-      const imageObserver = new IntersectionObserver((entries, observer) => {
+      if (imageUrls.length === 0) {
+        ui.warning('没有找到图片', 2000);
+        ui.hideLoading();
+        resolve();
+        return;
+      }
+      
+      // Create all image elements upfront
+      const imageElements = imageUrls.map((url, index) => {
+        const img = document.createElement('img');
+        img.setAttribute('data-index', index);
+        img.className = 'lazy-image';
+        
+        // Set placeholder and basic styling
+        img.alt = `图片 ${index + 1}`;
+        img.style.minHeight = '50px';
+        
+        // Prepare the full URL
+        const fullUrl = url.startsWith('http://') || url.startsWith('https://') 
+          ? url 
+          : `${config.baseUrl}${url}`;
+        img.setAttribute('data-src', fullUrl);
+        
+        // Append each image to container
+        container.appendChild(img);
+        return img;
+      });
+      
+      // Set up intersection observer for lazy loading
+      const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
           if (entry.isIntersecting) {
             const img = entry.target;
-            const dataSrc = img.getAttribute('data-src');
-            if (dataSrc && img.src !== dataSrc) {
-              // Set a loading state
-              img.style.opacity = '0.5';
+            const src = img.getAttribute('data-src');
+            
+            if (src && !img.src.includes(src)) {
+              console.log(`Loading image ${img.getAttribute('data-index')} from ${src}`);
+              img.src = src;
               
-              // Actually load the image
-              const tempImg = new Image();
-              tempImg.onload = () => {
-                img.src = dataSrc;
-                img.style.opacity = '1';
+              // Remove the placeholder styling once loaded
+              img.onload = function() {
+                img.style.minHeight = 'auto';
+                img.classList.add('loaded');
+                observer.unobserve(img);  // Stop observing once loaded
               };
-              tempImg.onerror = () => {
-                console.error('Error loading image:', dataSrc);
-                img.style.opacity = '1';
-                img.alt = 'Failed to load image';
+              
+              img.onerror = function() {
+                console.error(`Failed to load image ${img.getAttribute('data-index')} from ${src}`);
+                img.alt = '加载失败';
+                img.style.backgroundColor = '#f0f0f0';
+                img.style.minHeight = '150px';
+                observer.unobserve(img);  // Stop observing
               };
-              tempImg.src = dataSrc;
             }
-            observer.unobserve(img);
           }
         });
       }, {
-        rootMargin: '100px 0px' // Load images a bit before they come into view
+        // Load images as they approach the viewport
+        rootMargin: '200px 0px',
+        threshold: 0.01
       });
       
-      // Function to add images to the DOM
-      function loadImage() {
-        // Show at least first 5 images immediately
-        if (index >= 5 && index > imageUrls.length * 0.1) {
-          ui.hideLoading();
-          resolve();
-          return;
-        }
-        
-        if (index < imageUrls.length) {
-          const imageUrl = imageUrls[index];
-          const img = document.createElement('img');
-          
-          // Create a placeholder for the image
-          img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'; // 1px transparent GIF
-          
-          // Set up actual image URL
-          const fullUrl = imageUrl.startsWith('http://') || imageUrl.startsWith('https://') 
-            ? imageUrl 
-            : `${config.baseUrl}${imageUrl}`;
-          
-          img.setAttribute('data-src', fullUrl);
-          img.alt = `Image ${index + 1}`;
-          img.style.display = 'block';
-          img.style.width = '100%';
-          img.style.maxWidth = '100%';
-          img.classList.add('lazy-image');
-          
-          // Add to container and observe
-          container.appendChild(img);
-          imageObserver.observe(img);
-          
-          // Preload the first few images immediately
-          if (index < 3) {
-            const preloadImg = new Image();
-            preloadImg.src = fullUrl;
-          }
-          
-          // Continue loading next image
-          index++;
-          
-          // Use setTimeout to prevent blocking the UI thread
-          setTimeout(loadImage, 10);
-        } else {
-          ui.hideLoading();
-          resolve();
+      // Observe all images
+      imageElements.forEach(img => {
+        observer.observe(img);
+      });
+      
+      // Load the first few images immediately
+      for (let i = 0; i < Math.min(5, imageElements.length); i++) {
+        const img = imageElements[i];
+        const src = img.getAttribute('data-src');
+        if (src) {
+          console.log(`Preloading image ${i} from ${src}`);
+          img.src = src;
         }
       }
       
-      // Start loading process
-      container.innerHTML = ''; // Clear container first
-      loadImage();
-      
-      // Add debugging info
-      console.log(`Loading ${imageUrls.length} images`);
+      // Hide loading after a short delay to allow initial images to appear
+      setTimeout(() => {
+        ui.hideLoading();
+        resolve();
+      }, 500);
     });
   },
   
-  // Helper method to add image loading error handler
+  // Method to force load all remaining unloaded images
+  loadAllImages(container) {
+    const unloadedImages = container.querySelectorAll('img:not(.loaded)');
+    unloadedImages.forEach(img => {
+      const src = img.getAttribute('data-src');
+      if (src && !img.src.includes(src)) {
+        img.src = src;
+      }
+    });
+  },
+  
+  // Setup global image error handling
   setupImageErrorHandling(container) {
     container.addEventListener('error', function(e) {
       if (e.target.tagName === 'IMG') {
         console.error('Image failed to load:', e.target.src);
-        e.target.alt = 'Image failed to load';
-        e.target.style.height = '100px';
-        e.target.style.background = '#f0f0f0';
-        e.target.onerror = null; // Prevent infinite error loop
+        e.target.alt = '图片加载失败';
+        e.target.style.minHeight = '150px';
+        e.target.style.backgroundColor = '#f0f0f0';
+        e.target.onerror = null; // Prevent further error events
       }
     }, true);
   }
