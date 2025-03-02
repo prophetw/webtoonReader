@@ -49,62 +49,36 @@ async function displayComics(comics) {
   indexContainer.className = 'alphabet-index';
   comicsContainer.appendChild(indexContainer);
   
-  // Sort comics using enhanced pinyin handling
-  const sortedComics = [...comics].sort((a, b) => {
-    return pinyin.compare(a, b);
-  });
+  // Sort comics using enhanced title handling
+  const sortedComics = [...comics].sort((a, b) => pinyin.compare(a, b));
   
-  // Group comics by first letter using improved categorization
-  const comicsByLetter = {};
-  const letterOrder = [];
-  
-  // Pre-create number groups (0-9) to ensure correct order
-  for (let i = 0; i <= 9; i++) {
-    comicsByLetter[i.toString()] = [];
-    letterOrder.push(i.toString());
-  }
+  // Group comics by category
+  const comicsByCategory = {};
   
   // Process each comic for grouping
   sortedComics.forEach(comic => {
-    let firstLetter = pinyin.getFirstLetter(comic);
+    const category = pinyin.getFirstLetter(comic);
     
-    // Create group if it doesn't exist yet
-    if (!comicsByLetter[firstLetter]) {
-      comicsByLetter[firstLetter] = [];
-      
-      // Add to letter order (excluding numbers which we pre-created)
-      if (!/[0-9]/.test(firstLetter)) {
-        letterOrder.push(firstLetter);
-      }
+    if (!comicsByCategory[category]) {
+      comicsByCategory[category] = [];
     }
     
-    comicsByLetter[firstLetter].push(comic);
+    comicsByCategory[category].push(comic);
   });
   
-  // Sort letter order (A-Z, with # at the end)
-  letterOrder.sort((a, b) => {
-    // Numbers come first in their natural order (already ordered)
-    if (/[0-9]/.test(a) && /[0-9]/.test(b)) return parseInt(a) - parseInt(b);
-    if (/[0-9]/.test(a)) return -1;
-    if (/[0-9]/.test(b)) return 1;
-    
-    // Special category # comes last
-    if (a === '#') return 1;
-    if (b === '#') return -1;
-    
-    // Letters in alphabetical order
-    return a.localeCompare(b);
-  });
+  // Get categories in display order
+  const categories = pinyin.getSortedCategories().filter(
+    category => comicsByCategory[category] && comicsByCategory[category].length > 0
+  );
   
-  // Create index buttons (only for categories that actually have comics)
-  letterOrder.forEach(letter => {
-    if (comicsByLetter[letter].length > 0) {
-      const letterButton = document.createElement('span');
-      letterButton.className = 'index-letter';
-      letterButton.textContent = letter;
-      letterButton.setAttribute('data-letter', letter);
-      indexContainer.appendChild(letterButton);
-    }
+  // Create index buttons for categories that have comics
+  categories.forEach(category => {
+    const letterButton = document.createElement('span');
+    letterButton.className = 'index-letter';
+    letterButton.textContent = category;
+    letterButton.setAttribute('data-letter', category);
+    letterButton.title = pinyin.getCategoryName(category); // Add tooltip
+    indexContainer.appendChild(letterButton);
   });
   
   // Add click/touch events for index buttons
@@ -119,22 +93,30 @@ async function displayComics(comics) {
     }
   });
   
-  // Create comic list with letter sections
-  letterOrder.forEach(letter => {
-    if (comicsByLetter[letter].length > 0) {
-      // Create section header with count
+  // Create comic list with category sections
+  categories.forEach(category => {
+    const comics = comicsByCategory[category];
+    
+    if (comics && comics.length > 0) {
+      // Create section header with count and name
       const sectionHeader = document.createElement('div');
       sectionHeader.className = 'section-header';
-      sectionHeader.id = `section-${letter}`;
+      sectionHeader.id = `section-${category}`;
       
-      // Display section name with count of comics
-      const count = comicsByLetter[letter].length;
-      sectionHeader.innerHTML = `${letter} <span class="section-count">(${count})</span>`;
+      // Get nice category name and count
+      const categoryName = pinyin.getCategoryName(category);
+      const count = comics.length;
+      
+      sectionHeader.innerHTML = `
+        <span class="section-title">${category}</span>
+        <span class="section-name">${categoryName}</span>
+        <span class="section-count">(${count})</span>
+      `;
       
       comicsContainer.appendChild(sectionHeader);
       
-      // Add comics in this section
-      comicsByLetter[letter].forEach(comic => {
+      // Add comics in this category
+      comics.forEach(comic => {
         const details = document.createElement('details');
         const summary = document.createElement('summary');
         summary.setAttribute('data-comic', comic);

@@ -455,6 +455,90 @@
       color: #666;
       font-weight: normal;
     }
+
+    /* Enhanced section header styles */
+    .section-header {
+      background-color: #e9ecef;
+      padding: 10px 15px;
+      font-weight: bold;
+      border-bottom: 1px solid #dee2e6;
+      position: sticky;
+      top: 45px; /* Adjusted to account for the alphabet index */
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      font-size: 16px;
+    }
+    
+    .section-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #007bff;
+      margin-right: 8px;
+    }
+    
+    .section-name {
+      font-size: 14px;
+      color: #666;
+      flex-grow: 1;
+      margin-right: 8px;
+    }
+    
+    .section-count {
+      font-size: 12px;
+      color: #666;
+      font-weight: normal;
+    }
+    
+    /* Improved alphabet index for better visibility */
+    .alphabet-index {
+      position: sticky;
+      top: 0;
+      background-color: #f8f8f8;
+      padding: 8px 4px;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      z-index: 4;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      gap: 3px;
+    }
+    
+    .index-letter {
+      display: inline-flex;
+      width: 24px;
+      height: 24px;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      background-color: #007bff;
+      color: white;
+      border-radius: 50%;
+      font-weight: bold;
+      font-size: 12px;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.2s ease, background-color 0.2s ease;
+    }
+    
+    /* Special styling for different category types */
+    .index-letter[data-letter="#"] {
+      background-color: #6c757d; /* Gray for special chars */
+    }
+    
+    .index-letter[data-letter^="0"],
+    .index-letter[data-letter^="1"],
+    .index-letter[data-letter^="2"],
+    .index-letter[data-letter^="3"],
+    .index-letter[data-letter^="4"],
+    .index-letter[data-letter^="5"],
+    .index-letter[data-letter^="6"],
+    .index-letter[data-letter^="7"],
+    .index-letter[data-letter^="8"],
+    .index-letter[data-letter^="9"] {
+      background-color: #28a745; /* Green for numbers */
+    }
   </style>
 
   <body>

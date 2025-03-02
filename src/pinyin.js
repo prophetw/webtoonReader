@@ -1,143 +1,263 @@
 /**
- * Enhanced pinyin utility for handling Chinese characters
- * Handles simplified Chinese, traditional Chinese, numbers, and special characters
+ * Enhanced pinyin utility for handling various character types in manga titles
+ * Handles Chinese, English, numbers, and special characters
  */
 
-// Common first letters map (expanded to include more characters)
+// Common first letters map (expanded for manga titles)
 const commonFirstLetters = {
-  // Simplified Chinese first letters
-  '阿': 'A', '八': 'B', '蔡': 'C', '曹': 'C', '岑': 'C', '常': 'C', '车': 'C', '陈': 'C', '程': 'C', '池': 'C', '崔': 'C', 
-  '戴': 'D', '邓': 'D', '丁': 'D', '董': 'D', '窦': 'D', '杜': 'D', '段': 'D',  
-  '范': 'F', '方': 'F', '房': 'F', '费': 'F', '冯': 'F', '符': 'F', '傅': 'F',
-  '甘': 'G', '高': 'G', '戈': 'G', '葛': 'G', '龚': 'G', '宫': 'G', '顾': 'G', '广': 'G', '桂': 'G', '郭': 'G',
-  '韩': 'H', '杭': 'H', '郝': 'H', '何': 'H', '洪': 'H', '侯': 'H', '胡': 'H', '华': 'H', '黄': 'H', '霍': 'H',
-  '姬': 'J', '嵇': 'J', '纪': 'J', '季': 'J', '贾': 'J', '简': 'J', '江': 'J', '蒋': 'J', '焦': 'J', '金': 'J',
-  '康': 'K', '柯': 'K', '孔': 'K', '寇': 'K',
-  '赖': 'L', '兰': 'L', '蓝': 'L', '李': 'L', '梁': 'L', '廖': 'L', '林': 'L', '刘': 'L', '柳': 'L', '龙': 'L', '卢': 'L', '吕': 'L', '罗': 'L',
-  '马': 'M', '麦': 'M', '毛': 'M', '梅': 'M', '孟': 'M', '莫': 'M',
-  '倪': 'N', '牛': 'N',
-  '欧': 'O',
-  '潘': 'P', '彭': 'P', '蒲': 'P',
-  '戚': 'Q', '钱': 'Q', '强': 'Q', '秦': 'Q', '邱': 'Q', '裘': 'Q', '曲': 'Q',
-  '任': 'R', '荣': 'R',
-  '沙': 'S', '邵': 'S', '沈': 'S', '盛': 'S', '施': 'S', '石': 'S', '宋': 'S', '苏': 'S', '孙': 'S',
-  '谭': 'T', '汤': 'T', '唐': 'T', '陶': 'T', '田': 'T', '童': 'T',
-  '汪': 'W', '王': 'W', '魏': 'W', '卫': 'W', '温': 'W', '文': 'W', '翁': 'W', '巫': 'W', '吴': 'W', '武': 'W',
-  '夏': 'X', '项': 'X', '萧': 'X', '谢': 'X', '辛': 'X', '邢': 'X', '徐': 'X', '许': 'X', '薛': 'X',
-  '严': 'Y', '颜': 'Y', '杨': 'Y', '姚': 'Y', '叶': 'Y', '伊': 'Y', '易': 'Y', '殷': 'Y', '尹': 'Y', '俞': 'Y', '于': 'Y', '余': 'Y', '袁': 'Y', '岳': 'Y',
-  '曾': 'Z', '詹': 'Z', '张': 'Z', '章': 'Z', '赵': 'Z', '郑': 'Z', '钟': 'Z', '周': 'Z', '朱': 'Z', '祝': 'Z', '庄': 'Z', '卓': 'Z',
+  // Simplified Chinese characters by pinyin first letter
+  '啊': 'A', '爱': 'A', '安': 'A', '奥': 'A', '阿': 'A',
+  '巴': 'B', '白': 'B', '百': 'B', '宝': 'B', '保': 'B', '暴': 'B', '北': 'B', '贝': 'B', '本': 'B', '比': 'B', '毕': 'B',
+  '不': 'B', '部': 'B', '步': 'B',
+  '超': 'C', '超人': 'C', '成': 'C', '诚': 'C', '城': 'C', '吃': 'C', '初': 'C', '创': 'C', '传': 'C',
+  '大': 'D', '代': 'D', '刀': 'D', '的': 'D', '帝': 'D', '第': 'D', '地': 'D', '东': 'D', '冬': 'D', '都': 'D', '斗': 'D',
+  '队': 'D', '对': 'D', '多': 'D',
+  '恶': 'E', '二': 'E', '儿': 'E',
+  '发': 'F', '法': 'F', '反': 'F', '饭': 'F', '方': 'F', '房': 'F', '非': 'F', '飞': 'F', '斐': 'F', '分': 'F', '风': 'F',
+  '封': 'F', '疯': 'F', '凤': 'F', '佛': 'F', '夫': 'F', '父': 'F', '付': 'F', '妇': 'F',
+  '改': 'G', '概': 'G', '干': 'G', '刚': 'G', '高': 'G', '搞': 'G', '哥': 'G', '个': 'G', '跟': 'G', '工': 'G', '公': 'G',
+  '功': 'G', '古': 'G', '怪': 'G', '关': 'G', '鬼': 'G', '国': 'G',
+  '哈': 'H', '海': 'H', '害': 'H', '含': 'H', '韩': 'H', '和': 'H', '黑': 'H', '红': 'H', '后': 'H', '虎': 'H', '护': 'H',
+  '话': 'H', '幻': 'H', '换': 'H', '皇': 'H', '黄': 'H', '回': 'H', '魂': 'H',
   
-  // Traditional Chinese characters (common surnames and words)
-  '陳': 'C', '鄭': 'Z', '黃': 'H', '林': 'L', '張': 'Z', '李': 'L', '王': 'W', '吳': 'W',
-  '劉': 'L', '蔡': 'C', '楊': 'Y', '許': 'X', '鄧': 'D', '郭': 'G', '周': 'Z', '葉': 'Y',
-  '蘇': 'S', '莊': 'Z', '呂': 'L', '趙': 'Z', '顏': 'Y', '柯': 'K', '翁': 'W', '魏': 'W',
+  // Japanese common words in manga titles (romanized)
+  '鬼': 'O', // Oni
+  '忍': 'N', // Ninja/Shinobi
+  '剣': 'K', // Ken (sword)
+  '魔': 'M', // Ma (magic/demon)
+  '竜': 'R', // Ryu (dragon)
+  '龍': 'R', // Ryu (dragon traditional)
+  '神': 'S', // Kami/Shin
+  '影': 'K', // Kage (shadow)
+  '少女': 'S', // Shoujo
+  '王': 'O', // Ou (king)
+  '学園': 'G', // Gakuen
+  '学院': 'G', // Gakuin
+  '死': 'S', // Shi (death)
+  '命': 'I', // Inochi (life)
   
-  // Numbers (treat them separately so they sort correctly)
+  // Numbers (both Arabic and Chinese)
   '0': '0', '1': '1', '2': '2', '3': '3', '4': '4',
   '5': '5', '6': '6', '7': '7', '8': '8', '9': '9',
   '零': '0', '一': '1', '二': '2', '三': '3', '四': '4',
-  '五': '5', '六': '6', '七': '7', '八': '8', '九': '9', '十': '10'
+  '五': '5', '六': '6', '七': '7', '八': '8', '九': '9', 
+  '十': '1', // Group "十" (10) with '1' for simplicity
+  '百': '1', // Group "百" (100) with '1'
+  '千': '1', // Group "千" (1000) with '1'
+  '万': '1', // Group "万" (10000) with '1'
+  '亿': '1'  // Group "亿" (100M) with '1'
 };
 
-// Traditional to simplified Chinese conversion for common characters
+// Traditional to simplified conversion for common manga-related characters
 const traditionalToSimplified = {
-  '漢': '汉', '國': '国', '說': '说', '車': '车', '門': '门', '東': '东', '馬': '马',
-  '長': '长', '時': '时', '書': '书', '見': '见', '風': '风', '無': '无', '開': '开',
-  '電': '电', '發': '发', '問': '问', '學': '学', '這': '这', '還': '还', '對': '对',
-  '麗': '丽', '華': '华', '實': '实', '點': '点', '經': '经', '樣': '样', '處': '处',
-  '體': '体', '師': '师', '義': '义', '數': '数', '來': '来', '關': '关', '幾': '几',
-  '後': '后', '語': '语', '當': '当', '頭': '头', '歲': '岁', '報': '报', '動': '动',
-  '務': '务', '員': '员', '難': '难', '產': '产', '單': '单', '讓': '让', '致': '致',
-  '兒': '儿', '鳥': '鸟', '專': '专', '區': '区', '決': '决', '萬': '万', '勝': '胜',
-  '總': '总', '麼': '么', '醫': '医', '衛': '卫', '氣': '气', '業': '业', '聲': '声'
+  '漫畫': '漫画', '動漫': '动漫', '冒險': '冒险', '戰鬥': '战斗',
+  '魔法': '魔法', '戀愛': '恋爱', '格鬥': '格斗', '神鬼': '神鬼',
+  '科幻': '科幻', '奇幻': '奇幻', '熱血': '热血', '推理': '推理',
+  '懸疑': '悬疑', '恐怖': '恐怖', '日常': '日常', '搞笑': '搞笑',
+  '後宮': '后宫', '校園': '校园', '少年': '少年', '少女': '少女',
+  '青年': '青年', '武俠': '武侠', '機戰': '机战', '競技': '竞技',
+  '運動': '运动', '歷史': '历史', '社會': '社会', '職場': '职场',
+  '勵志': '励志', '美食': '美食', '治癒': '治愈', '萌系': '萌系',
+  '四格': '四格', '短篇': '短篇', '長篇': '长篇', '單行本': '单行本',
+  '漢化': '汉化', '彩色': '彩色', '連載': '连载', '完結': '完结',
+  '東方': '东方', '西方': '西方', '南方': '南方', '北方': '北方',
+  '魂': '魂', '傳': '传', '鬼': '鬼', '風': '风', '無': '无', '開': '开',
+  '電': '电', '發': '发', '問': '问', '學': '学', '這': '这', '還': '还'
 };
+
+// Sorting categories with their display names
+const categorySortOrder = {
+  // Display name for categories
+  '#': '特殊符号',
+  '0': '数字0',
+  '1': '数字1',
+  '2': '数字2',
+  '3': '数字3',
+  '4': '数字4',
+  '5': '数字5',
+  '6': '数字6',
+  '7': '数字7',
+  '8': '数字8',
+  '9': '数字9',
+  'A': 'A', 'B': 'B', 'C': 'C', 'D': 'D', 'E': 'E', 'F': 'F', 'G': 'G',
+  'H': 'H', 'I': 'I', 'J': 'J', 'K': 'K', 'L': 'L', 'M': 'M', 'N': 'N',
+  'O': 'O', 'P': 'P', 'Q': 'Q', 'R': 'R', 'S': 'S', 'T': 'T', 'U': 'U',
+  'V': 'V', 'W': 'W', 'X': 'X', 'Y': 'Y', 'Z': 'Z'
+};
+
+// Order of categories for UI display
+const categoryDisplayOrder = [
+  '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+  'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+  '#'
+];
+
+// Character categorization helper
+function getCategoryFromChar(char) {
+  if (!char) return '#';
+  
+  // Numbers get their own category
+  if (/[0-9]/.test(char)) return char; 
+  
+  // Latin letters are uppercase for category
+  if (/[a-zA-Z]/.test(char)) return char.toUpperCase();
+  
+  // Try direct lookup in mapping
+  if (commonFirstLetters[char]) return commonFirstLetters[char];
+  
+  // Check if it's a Chinese/Japanese/Korean character
+  if (/[\u4e00-\u9fff\u3400-\u4dbf\uac00-\ud7af]/.test(char)) {
+    return 'C'; // Default category for CJK without specific mapping
+  }
+  
+  // Any other character
+  return '#';
+}
 
 const pinyin = {
   /**
    * Convert a traditional Chinese character to simplified if possible
+   * @param {string} char - Character to convert
+   * @returns {string} Simplified version or original
    */
   toSimplified(char) {
     return traditionalToSimplified[char] || char;
   },
+  
+  /**
+   * Clean a title for better categorization
+   * @param {string} title - Title to clean
+   * @returns {string} Cleaned title
+   */
+  cleanTitle(title) {
+    if (!title) return '';
+    
+    // Remove common leading symbols that shouldn't affect sorting
+    return title.replace(/^[\s《【「『（([{~～_\-]+/, '');
+  },
 
   /**
-   * Get the first letter of a string, handling various character types
-   * @param {string} str - The string to process
-   * @returns {string} The first letter (capitalized) or category
+   * Get the first letter/category for a manga title
+   * @param {string} title - The title to categorize
+   * @returns {string} The category letter (A-Z, 0-9, or #)
    */
-  getFirstLetter(str) {
-    if (!str || typeof str !== 'string' || str.length === 0) return '#';
+  getFirstLetter(title) {
+    if (!title || typeof title !== 'string' || title.length === 0) return '#';
     
-    const firstChar = str.charAt(0);
+    // Clean the title first
+    const cleanedTitle = this.cleanTitle(title);
+    if (!cleanedTitle) return '#';
     
-    // Handle numbers at the beginning - keep them in the original numeric order
-    if (/[0-9]/.test(firstChar)) {
-      return firstChar;
-    }
+    // Get first character for categorization
+    const firstChar = cleanedTitle.charAt(0);
     
-    // If it's already a latin letter, return it capitalized
-    if (/[A-Za-z]/.test(firstChar)) {
-      return firstChar.toUpperCase();
-    }
-    
-    // Try direct lookup in common first letters map
-    if (commonFirstLetters[firstChar]) {
-      return commonFirstLetters[firstChar];
-    }
-    
-    // For traditional Chinese, try to convert to simplified first
-    const simplifiedChar = this.toSimplified(firstChar);
-    if (simplifiedChar !== firstChar && commonFirstLetters[simplifiedChar]) {
-      return commonFirstLetters[simplifiedChar];
-    }
-    
-    // Check if it's a Chinese character (both simplified and traditional)
-    if (/[\u4e00-\u9fff\u3400-\u4dbf]/.test(firstChar)) {
-      // For Chinese characters without mapping, group under C for Chinese
-      return 'C';
-    }
-    
-    // For any other character (special chars, emoji, etc.)
-    return '#';
+    // Try to categorize the character
+    return getCategoryFromChar(firstChar);
   },
   
   /**
-   * Sort strings considering character types for better organization
+   * Get display name for a category
+   * @param {string} category - Single-character category code
+   * @returns {string} Human-readable category name
+   */
+  getCategoryName(category) {
+    return categorySortOrder[category] || category;
+  },
+  
+  /**
+   * Get sorted list of category codes in display order
+   * @returns {string[]} Array of category codes
+   */
+  getSortedCategories() {
+    return [...categoryDisplayOrder];
+  },
+  
+  /**
+   * Compare two manga titles for sorting
+   * @param {string} a - First title
+   * @param {string} b - Second title
+   * @returns {number} Sort comparison result
+   */
+  compare(a, b) {
+    // Clean titles first
+    const cleanA = this.cleanTitle(a);
+    const cleanB = this.cleanTitle(b);
+    
+    // Get categories for comparison
+    const catA = this.getFirstLetter(cleanA);
+    const catB = this.getFirstLetter(cleanB);
+    
+    // If categories differ, sort by category
+    if (catA !== catB) {
+      // Get index in display order
+      const indexA = categoryDisplayOrder.indexOf(catA);
+      const indexB = categoryDisplayOrder.indexOf(catB);
+      
+      // Sort by display order
+      if (indexA !== -1 && indexB !== -1) {
+        return indexA - indexB;
+      }
+      
+      // Handle cases where category might not be in display order
+      if (catA === '#') return 1; // Special chars last
+      if (catB === '#') return -1;
+      
+      return catA.localeCompare(catB);
+    }
+    
+    // Same category - try natural sorting for titles with numbers
+    if (/\d/.test(cleanA) && /\d/.test(cleanB)) {
+      return this.naturalCompare(cleanA, cleanB);
+    }
+    
+    // Default to locale-aware comparison
+    try {
+      return cleanA.localeCompare(cleanB, 'zh-CN');
+    } catch (e) {
+      // Fallback if locale not supported
+      return cleanA.localeCompare(cleanB);
+    }
+  },
+  
+  /**
+   * Natural sort comparison (1, 2, 10 instead of 1, 10, 2)
    * @param {string} a - First string
    * @param {string} b - Second string
    * @returns {number} Sort comparison result
    */
-  compare(a, b) {
-    // Get first letters (or sorting categories)
-    const aFirst = this.getFirstLetter(a);
-    const bFirst = this.getFirstLetter(b);
+  naturalCompare(a, b) {
+    // Split strings into text and numeric parts
+    const splitA = a.match(/(\d+|\D+)/g) || [];
+    const splitB = b.match(/(\d+|\D+)/g) || [];
     
-    // Different first letter/category - sort by that
-    if (aFirst !== bFirst) {
-      // Special sorting for numbers to ensure correct order (not alphabetical)
-      if (/[0-9]/.test(aFirst) && /[0-9]/.test(bFirst)) {
-        return parseInt(aFirst) - parseInt(bFirst);
+    // Compare each part
+    const minLength = Math.min(splitA.length, splitB.length);
+    
+    for (let i = 0; i < minLength; i++) {
+      let partA = splitA[i];
+      let partB = splitB[i];
+      
+      // Check if both parts are numbers
+      const numA = /^\d+$/.test(partA) ? parseInt(partA, 10) : NaN;
+      const numB = /^\d+$/.test(partB) ? parseInt(partB, 10) : NaN;
+      
+      if (!isNaN(numA) && !isNaN(numB)) {
+        // Compare as numbers
+        if (numA !== numB) {
+          return numA - numB;
+        }
+      } else {
+        // Compare as strings
+        const comparison = partA.localeCompare(partB, 'zh-CN');
+        if (comparison !== 0) {
+          return comparison;
+        }
       }
-      
-      // Special handling to ensure # comes last
-      if (aFirst === '#') return 1;
-      if (bFirst === '#') return -1;
-      
-      // Numbers come before letters
-      if (/[0-9]/.test(aFirst) && /[A-Z]/.test(bFirst)) return -1;
-      if (/[A-Z]/.test(aFirst) && /[0-9]/.test(bFirst)) return 1;
-      
-      // Otherwise use standard lexicographical comparison
-      return aFirst.localeCompare(bFirst);
     }
     
-    // Same first letter - sort by full string
-    try {
-      return a.localeCompare(b, 'zh-CN');
-    } catch (e) {
-      // Fallback if locale not supported
-      return a.localeCompare(b);
-    }
+    // If all compared parts are equal, compare by length
+    return splitA.length - splitB.length;
   }
 };
 
