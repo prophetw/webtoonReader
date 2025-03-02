@@ -517,7 +517,10 @@ function initSettings() {
   saveTagEle.addEventListener(action, () => {
     const tags = tagInputEle.value.split(',');
     if (comicMetaInfo) {
-      comicMetaInfo[curComicName].tags = tags;
+      // update local memory 
+      if(comicMetaInfo[curComicName]){
+        comicMetaInfo[curComicName].tags = tags;
+      }
     }
     updateComicTags(tags);
     const summaryEle = summaryEleMap.get(curComicName);
@@ -531,7 +534,9 @@ function initSettings() {
   saveScoreEle.addEventListener(action, () => {
     const score = scoreInputEle.value;
     if (comicMetaInfo) {
-      comicMetaInfo[curComicName].score = score;
+      if(comicMetaInfo[curComicName]){
+        comicMetaInfo[curComicName].score = score;
+      }
     }
     updateComicScore(score);
     const summaryEle = summaryEleMap.get(curComicName);
