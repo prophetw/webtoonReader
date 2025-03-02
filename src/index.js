@@ -135,6 +135,14 @@ async function loadImages(comicName, episode, imagesContainer = null) {
     const container = imagesContainer || document.getElementById('content');
     container.innerHTML = '';
     
+    // Debug output
+    console.log(`Fetched ${images.length} images for ${comicName} - ${episode}`);
+    console.log('Sample image URL:', images[0]);
+    
+    // Set up error handling for the container
+    imageLoader.setupImageErrorHandling(container);
+    
+    // Load images with our improved loader
     await imageLoader.loadImagesSequentially(images, container);
     
     // Start auto-scrolling if autoPlay is enabled
@@ -143,7 +151,7 @@ async function loadImages(comicName, episode, imagesContainer = null) {
     }
   } catch (error) {
     console.error('Error fetching images:', error);
-    ui.warning('加载图片失败', 2000);
+    ui.warning('加载图片失败: ' + error.message, 3000);
   } finally {
     ui.hideLoading();
   }
