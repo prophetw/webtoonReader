@@ -98,6 +98,45 @@ const utils = {
       e.stopPropagation();
     }
     return false;
+  },
+  
+  /**
+   * Gets a sortable representation of a string, considering Chinese characters
+   * This is a basic implementation - for a more accurate solution,
+   * consider using a dedicated pinyin library
+   * @param {string} str - String to get sortable representation for
+   * @returns {string} Sortable representation
+   */
+  getPinyinSortKey(str) {
+    // Basic first-letter extraction
+    // In a real implementation, this would use a proper pinyin conversion library
+    return str.charAt(0).toUpperCase();
+  },
+  
+  /**
+   * Checks if a character is a Chinese character
+   * @param {string} char - The character to check
+   * @returns {boolean} True if the character is Chinese
+   */
+  isChineseChar(char) {
+    return /[\u4e00-\u9fa5]/.test(char);
+  },
+  
+  /**
+   * Groups array items by a key function
+   * @param {Array} array - The array to group
+   * @param {Function} keyFn - Function that returns the key for grouping
+   * @returns {Object} Grouped items
+   */
+  groupBy(array, keyFn) {
+    return array.reduce((result, item) => {
+      const key = keyFn(item);
+      if (!result[key]) {
+        result[key] = [];
+      }
+      result[key].push(item);
+      return result;
+    }, {});
   }
 };
 

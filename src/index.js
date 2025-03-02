@@ -4,6 +4,7 @@ import ui from './ui.js';
 import scroll from './scroll.js';
 import imageLoader from './imageLoader.js';
 import utils from './utils.js';
+import pinyin from './pinyin.js';
 
 // Use more reliable touch detection
 const isMobile = utils.isTouchDevice();
@@ -43,28 +44,96 @@ async function displayComics(comics) {
   const comicsContainer = document.getElementById('comics');
   comicsContainer.innerHTML = '';
   
-  comics.forEach((comic) => {
-    const details = document.createElement('details');
-    const summary = document.createElement('summary');
-    summary.setAttribute('data-comic', comic);
-    state.summaryEleMap.set(comic, summary);
+  // Add alphabet index at the top
+  const indexContainer = document.createElement('div');
+  indexContainer.className = 'alphabet-index';
+  comicsContainer.appendChild(indexContainer);
+  
+  // Sort comics alphabetically using pinyin for Chinese characters
+  const sortedComics = [...comics].sort((a, b) => {
+    return pinyin.compare(a, b);
+  });
+  
+  // Group comics by first letter
+  const comicsByLetter = {};
+  
+  sortedComics.forEach(comic => {
+    // Get first letter using pinyin conversion for Chinese characters
+    let firstLetter = pinyin.getFirstLetter(comic);
     
-    if (comic) {
-      const meta = state.comicMetaInfo[comic];
-      if (meta) {
-        const { tags = [], score = 0 } = meta;
-        if ((tags && tags.length > 0) || score !== 0) {
-          summary.innerHTML = `${comic} <span class="tags">${tags.join(',')}</span> <span class="score">评分：${score}</span>`;
+    // Group non-alphanumeric under '#'
+    if (!firstLetter.match(/[A-Z0-9]/)) {
+      firstLetter = '#';
+    }
+    
+    if (!comicsByLetter[firstLetter]) {
+      comicsByLetter[firstLetter] = [];
+    }
+    comicsByLetter[firstLetter].push(comic);
+  });
+  
+  // Get sorted list of all first letters
+  const letters = Object.keys(comicsByLetter).sort((a, b) => {
+    if (a === '#') return 1; // Put '#' at the end
+    if (b === '#') return -1;
+    return a.localeCompare(b);
+  });
+  
+  // Create index buttons
+  letters.forEach(letter => {
+    const letterButton = document.createElement('span');
+    letterButton.className = 'index-letter';
+    letterButton.textContent = letter;
+    letterButton.setAttribute('data-letter', letter);
+    
+    indexContainer.appendChild(letterButton);
+  });
+  
+  // Add click/touch events for index buttons
+  indexContainer.addEventListener(action, (e) => {
+    const target = e.target;
+    if (target.classList.contains('index-letter')) {
+      const letter = target.getAttribute('data-letter');
+      const section = document.getElementById(`section-${letter}`);
+      if (section) {
+        section.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  });
+  
+  // Create comic list with letter sections
+  letters.forEach(letter => {
+    // Create section header
+    const sectionHeader = document.createElement('div');
+    sectionHeader.className = 'section-header';
+    sectionHeader.id = `section-${letter}`;
+    sectionHeader.textContent = letter;
+    comicsContainer.appendChild(sectionHeader);
+    
+    // Add comics in this section
+    comicsByLetter[letter].forEach(comic => {
+      const details = document.createElement('details');
+      const summary = document.createElement('summary');
+      summary.setAttribute('data-comic', comic);
+      state.summaryEleMap.set(comic, summary);
+      
+      if (comic) {
+        const meta = state.comicMetaInfo[comic];
+        if (meta) {
+          const { tags = [], score = 0 } = meta;
+          if ((tags && tags.length > 0) || score !== 0) {
+            summary.innerHTML = `${comic} <span class="tags">${tags.join(',')}</span> <span class="score">评分：${score}</span>`;
+          } else {
+            summary.textContent = comic;
+          }
         } else {
           summary.textContent = comic;
         }
-      } else {
-        summary.textContent = comic;
       }
-    }
-    
-    details.appendChild(summary);
-    comicsContainer.appendChild(details);
+      
+      details.appendChild(summary);
+      comicsContainer.appendChild(details);
+    });
   });
   
   ui.hideAddressBar();
@@ -98,6 +167,12 @@ async function loadEpisodes(comicName) {
     
     const episodesDom = document.getElementById('episodes');
     episodesDom.innerHTML = '';
+    
+    // Add title for episodes panel
+    const episodesTitle = document.createElement('div');
+    episodesTitle.className = 'episodes-title';
+    episodesTitle.textContent = `${comicName} 章节`;
+    episodesDom.appendChild(episodesTitle);
     
     state.curEpisodesAry.forEach((episode, index) => {
       const episodeDiv = document.createElement('div');
@@ -133,6 +208,7 @@ async function loadImages(comicName, episode, imagesContainer = null) {
     
     document.title = `${comicName} - ${episode}`;
     document.getElementById('header').innerHTML = `${comicName} - ${episode}`;
+    document.getElementById('curComicEpi').textContent = episode;
     
     const container = imagesContainer || document.getElementById('content');
     
@@ -190,6 +266,8 @@ async function loadImages(comicName, episode, imagesContainer = null) {
 function updateComicMeta() {
   const tagInputEle = document.getElementById('tagInput');
   const scoreInputEle = document.getElementById('scoreInput');
+  const tagInputEpiEle = document.getElementById('tagInputEpi');
+  const scoreInputEpiEle = document.getElementById('scoreInputEpi');
   
   const updateTagsAndUI = () => {
     const tags = tagInputEle.value.split(',').filter(tag => tag.trim());
@@ -240,6 +318,8 @@ function updateComicMeta() {
       summaryEle.innerHTML = `${state.curComicName} <span class="tags">${tags.join(',')}</span> <span class="score">评分：${score}</span>`;
     }
   };
+  
+  // Episode tag and score handling could be added here
   
   document.getElementById('saveTag').addEventListener(action, updateTagsAndUI);
   document.getElementById('saveScore').addEventListener(action, updateScoreAndUI);
@@ -387,7 +467,7 @@ function initMobileInteractions() {
   episodes.addEventListener('touchend', (e) => {
     if (state.touchMoved) return; // Skip if this was a drag/scroll operation
     
-    if (e.target.tagName === 'DIV') {
+    if (e.target.tagName === 'DIV' && e.target.hasAttribute('data-episode')) {
       const index = e.target.getAttribute('data-index');
       const episode = e.target.getAttribute('data-episode');
       if (index !== null && episode) {
@@ -420,7 +500,8 @@ function initMobileInteractions() {
     if (e.target.classList.contains('floating-button') || 
         e.target.tagName === 'BUTTON' ||
         e.target.tagName === 'SUMMARY' || 
-        (e.target.tagName === 'DIV' && e.target.parentElement.id === 'episodes')) {
+        (e.target.tagName === 'DIV' && e.target.parentElement.id === 'episodes') ||
+        e.target.classList.contains('index-letter')) {
       utils.addTouchFeedback(e);
     }
   }, { passive: true });
@@ -461,12 +542,18 @@ function initEventListeners() {
           state.curComicName = comicName;
           loadEpisodes(comicName);
         }
+      } else if (e.target.classList.contains('index-letter')) {
+        const letter = e.target.getAttribute('data-letter');
+        const section = document.getElementById(`section-${letter}`);
+        if (section) {
+          section.scrollIntoView({ behavior: 'smooth' });
+        }
       }
     });
     
     // Episodes list click handler
     document.getElementById('episodes').addEventListener('click', (e) => {
-      if (e.target.tagName === 'DIV') {
+      if (e.target.tagName === 'DIV' && e.target.hasAttribute('data-episode')) {
         const index = e.target.getAttribute('data-index');
         const episode = e.target.getAttribute('data-episode');
         if (index !== null && episode) {
