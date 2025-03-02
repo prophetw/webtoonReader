@@ -65,12 +65,12 @@
 
     #play.right {
       top: auto;
-      bottom: 40%;
+      bottom: 50%;
     }
 
     #setting {
       top: auto;
-      bottom: 40%;
+      bottom: 50%;
     }
 
     .list-panel {
@@ -397,6 +397,63 @@
     
     .list-panel summary:hover {
       background-color: rgba(0, 123, 255, 0.05);
+    }
+
+    /* Improved alphabetical index styles */
+    .alphabet-index {
+      position: sticky;
+      top: 0;
+      background-color: #f8f8f8;
+      padding: 8px 0;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      z-index: 4;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      gap: 4px;
+    }
+    
+    .index-letter {
+      display: inline-flex;
+      width: 28px;
+      height: 28px;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      background-color: #007bff;
+      color: white;
+      border-radius: 50%;
+      font-weight: bold;
+      font-size: 14px;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.2s ease, background-color 0.2s ease;
+    }
+    
+    .index-letter:hover, .index-letter:active {
+      background-color: #0056b3;
+      transform: scale(1.1);
+    }
+    
+    .section-header {
+      background-color: #e9ecef;
+      padding: 8px 15px;
+      font-weight: bold;
+      border-bottom: 1px solid #dee2e6;
+      position: sticky;
+      top: 45px; /* Adjusted to account for the alphabet index */
+      z-index: 3;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 16px;
+    }
+    
+    .section-count {
+      font-size: 12px;
+      color: #666;
+      font-weight: normal;
     }
   </style>
 

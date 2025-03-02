@@ -49,44 +49,62 @@ async function displayComics(comics) {
   indexContainer.className = 'alphabet-index';
   comicsContainer.appendChild(indexContainer);
   
-  // Sort comics alphabetically using pinyin for Chinese characters
+  // Sort comics using enhanced pinyin handling
   const sortedComics = [...comics].sort((a, b) => {
     return pinyin.compare(a, b);
   });
   
-  // Group comics by first letter
+  // Group comics by first letter using improved categorization
   const comicsByLetter = {};
+  const letterOrder = [];
   
+  // Pre-create number groups (0-9) to ensure correct order
+  for (let i = 0; i <= 9; i++) {
+    comicsByLetter[i.toString()] = [];
+    letterOrder.push(i.toString());
+  }
+  
+  // Process each comic for grouping
   sortedComics.forEach(comic => {
-    // Get first letter using pinyin conversion for Chinese characters
     let firstLetter = pinyin.getFirstLetter(comic);
     
-    // Group non-alphanumeric under '#'
-    if (!firstLetter.match(/[A-Z0-9]/)) {
-      firstLetter = '#';
-    }
-    
+    // Create group if it doesn't exist yet
     if (!comicsByLetter[firstLetter]) {
       comicsByLetter[firstLetter] = [];
+      
+      // Add to letter order (excluding numbers which we pre-created)
+      if (!/[0-9]/.test(firstLetter)) {
+        letterOrder.push(firstLetter);
+      }
     }
+    
     comicsByLetter[firstLetter].push(comic);
   });
   
-  // Get sorted list of all first letters
-  const letters = Object.keys(comicsByLetter).sort((a, b) => {
-    if (a === '#') return 1; // Put '#' at the end
+  // Sort letter order (A-Z, with # at the end)
+  letterOrder.sort((a, b) => {
+    // Numbers come first in their natural order (already ordered)
+    if (/[0-9]/.test(a) && /[0-9]/.test(b)) return parseInt(a) - parseInt(b);
+    if (/[0-9]/.test(a)) return -1;
+    if (/[0-9]/.test(b)) return 1;
+    
+    // Special category # comes last
+    if (a === '#') return 1;
     if (b === '#') return -1;
+    
+    // Letters in alphabetical order
     return a.localeCompare(b);
   });
   
-  // Create index buttons
-  letters.forEach(letter => {
-    const letterButton = document.createElement('span');
-    letterButton.className = 'index-letter';
-    letterButton.textContent = letter;
-    letterButton.setAttribute('data-letter', letter);
-    
-    indexContainer.appendChild(letterButton);
+  // Create index buttons (only for categories that actually have comics)
+  letterOrder.forEach(letter => {
+    if (comicsByLetter[letter].length > 0) {
+      const letterButton = document.createElement('span');
+      letterButton.className = 'index-letter';
+      letterButton.textContent = letter;
+      letterButton.setAttribute('data-letter', letter);
+      indexContainer.appendChild(letterButton);
+    }
   });
   
   // Add click/touch events for index buttons
@@ -102,38 +120,44 @@ async function displayComics(comics) {
   });
   
   // Create comic list with letter sections
-  letters.forEach(letter => {
-    // Create section header
-    const sectionHeader = document.createElement('div');
-    sectionHeader.className = 'section-header';
-    sectionHeader.id = `section-${letter}`;
-    sectionHeader.textContent = letter;
-    comicsContainer.appendChild(sectionHeader);
-    
-    // Add comics in this section
-    comicsByLetter[letter].forEach(comic => {
-      const details = document.createElement('details');
-      const summary = document.createElement('summary');
-      summary.setAttribute('data-comic', comic);
-      state.summaryEleMap.set(comic, summary);
+  letterOrder.forEach(letter => {
+    if (comicsByLetter[letter].length > 0) {
+      // Create section header with count
+      const sectionHeader = document.createElement('div');
+      sectionHeader.className = 'section-header';
+      sectionHeader.id = `section-${letter}`;
       
-      if (comic) {
-        const meta = state.comicMetaInfo[comic];
-        if (meta) {
-          const { tags = [], score = 0 } = meta;
-          if ((tags && tags.length > 0) || score !== 0) {
-            summary.innerHTML = `${comic} <span class="tags">${tags.join(',')}</span> <span class="score">评分：${score}</span>`;
+      // Display section name with count of comics
+      const count = comicsByLetter[letter].length;
+      sectionHeader.innerHTML = `${letter} <span class="section-count">(${count})</span>`;
+      
+      comicsContainer.appendChild(sectionHeader);
+      
+      // Add comics in this section
+      comicsByLetter[letter].forEach(comic => {
+        const details = document.createElement('details');
+        const summary = document.createElement('summary');
+        summary.setAttribute('data-comic', comic);
+        state.summaryEleMap.set(comic, summary);
+        
+        if (comic) {
+          const meta = state.comicMetaInfo[comic];
+          if (meta) {
+            const { tags = [], score = 0 } = meta;
+            if ((tags && tags.length > 0) || score !== 0) {
+              summary.innerHTML = `${comic} <span class="tags">${tags.join(',')}</span> <span class="score">评分：${score}</span>`;
+            } else {
+              summary.textContent = comic;
+            }
           } else {
             summary.textContent = comic;
           }
-        } else {
-          summary.textContent = comic;
         }
-      }
-      
-      details.appendChild(summary);
-      comicsContainer.appendChild(details);
-    });
+        
+        details.appendChild(summary);
+        comicsContainer.appendChild(details);
+      });
+    }
   });
   
   ui.hideAddressBar();

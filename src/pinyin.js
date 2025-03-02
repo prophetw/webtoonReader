@@ -1,91 +1,143 @@
 /**
- * Basic pinyin utility for handling Chinese characters
- * This is a simplified version - for production use, consider a complete library
+ * Enhanced pinyin utility for handling Chinese characters
+ * Handles simplified Chinese, traditional Chinese, numbers, and special characters
  */
 
-// Map of common Chinese characters to their pinyin first letter
+// Common first letters map (expanded to include more characters)
 const commonFirstLetters = {
-  '阿': 'A', '八': 'B', '差': 'C', '大': 'D', '饿': 'E', '发': 'F', '搞': 'G', '哈': 'H',
-  '机': 'J', '开': 'K', '拉': 'L', '妈': 'M', '那': 'N', '哦': 'O', '怕': 'P', '七': 'Q',
-  '然': 'R', '三': 'S', '他': 'T', '哇': 'W', '下': 'X', '呀': 'Y', '咋': 'Z'
+  // Simplified Chinese first letters
+  '阿': 'A', '八': 'B', '蔡': 'C', '曹': 'C', '岑': 'C', '常': 'C', '车': 'C', '陈': 'C', '程': 'C', '池': 'C', '崔': 'C', 
+  '戴': 'D', '邓': 'D', '丁': 'D', '董': 'D', '窦': 'D', '杜': 'D', '段': 'D',  
+  '范': 'F', '方': 'F', '房': 'F', '费': 'F', '冯': 'F', '符': 'F', '傅': 'F',
+  '甘': 'G', '高': 'G', '戈': 'G', '葛': 'G', '龚': 'G', '宫': 'G', '顾': 'G', '广': 'G', '桂': 'G', '郭': 'G',
+  '韩': 'H', '杭': 'H', '郝': 'H', '何': 'H', '洪': 'H', '侯': 'H', '胡': 'H', '华': 'H', '黄': 'H', '霍': 'H',
+  '姬': 'J', '嵇': 'J', '纪': 'J', '季': 'J', '贾': 'J', '简': 'J', '江': 'J', '蒋': 'J', '焦': 'J', '金': 'J',
+  '康': 'K', '柯': 'K', '孔': 'K', '寇': 'K',
+  '赖': 'L', '兰': 'L', '蓝': 'L', '李': 'L', '梁': 'L', '廖': 'L', '林': 'L', '刘': 'L', '柳': 'L', '龙': 'L', '卢': 'L', '吕': 'L', '罗': 'L',
+  '马': 'M', '麦': 'M', '毛': 'M', '梅': 'M', '孟': 'M', '莫': 'M',
+  '倪': 'N', '牛': 'N',
+  '欧': 'O',
+  '潘': 'P', '彭': 'P', '蒲': 'P',
+  '戚': 'Q', '钱': 'Q', '强': 'Q', '秦': 'Q', '邱': 'Q', '裘': 'Q', '曲': 'Q',
+  '任': 'R', '荣': 'R',
+  '沙': 'S', '邵': 'S', '沈': 'S', '盛': 'S', '施': 'S', '石': 'S', '宋': 'S', '苏': 'S', '孙': 'S',
+  '谭': 'T', '汤': 'T', '唐': 'T', '陶': 'T', '田': 'T', '童': 'T',
+  '汪': 'W', '王': 'W', '魏': 'W', '卫': 'W', '温': 'W', '文': 'W', '翁': 'W', '巫': 'W', '吴': 'W', '武': 'W',
+  '夏': 'X', '项': 'X', '萧': 'X', '谢': 'X', '辛': 'X', '邢': 'X', '徐': 'X', '许': 'X', '薛': 'X',
+  '严': 'Y', '颜': 'Y', '杨': 'Y', '姚': 'Y', '叶': 'Y', '伊': 'Y', '易': 'Y', '殷': 'Y', '尹': 'Y', '俞': 'Y', '于': 'Y', '余': 'Y', '袁': 'Y', '岳': 'Y',
+  '曾': 'Z', '詹': 'Z', '张': 'Z', '章': 'Z', '赵': 'Z', '郑': 'Z', '钟': 'Z', '周': 'Z', '朱': 'Z', '祝': 'Z', '庄': 'Z', '卓': 'Z',
+  
+  // Traditional Chinese characters (common surnames and words)
+  '陳': 'C', '鄭': 'Z', '黃': 'H', '林': 'L', '張': 'Z', '李': 'L', '王': 'W', '吳': 'W',
+  '劉': 'L', '蔡': 'C', '楊': 'Y', '許': 'X', '鄧': 'D', '郭': 'G', '周': 'Z', '葉': 'Y',
+  '蘇': 'S', '莊': 'Z', '呂': 'L', '趙': 'Z', '顏': 'Y', '柯': 'K', '翁': 'W', '魏': 'W',
+  
+  // Numbers (treat them separately so they sort correctly)
+  '0': '0', '1': '1', '2': '2', '3': '3', '4': '4',
+  '5': '5', '6': '6', '7': '7', '8': '8', '9': '9',
+  '零': '0', '一': '1', '二': '2', '三': '3', '四': '4',
+  '五': '5', '六': '6', '七': '7', '八': '8', '九': '9', '十': '10'
 };
 
-// Simple conversion map with some common Chinese characters
-const pinyinMap = {
-  '一': 'yi', '二': 'er', '三': 'san', '四': 'si', '五': 'wu', '六': 'liu', '七': 'qi', '八': 'ba', '九': 'jiu', '十': 'shi',
-  '爱': 'ai', '安': 'an', '八': 'ba', '白': 'bai', '百': 'bai', '北': 'bei', '本': 'ben', '不': 'bu',
-  '大': 'da', '的': 'de', '地': 'di', '东': 'dong', '都': 'dou',
-  '儿': 'er',
-  '方': 'fang', '分': 'fen', '风': 'feng', '佛': 'fo', '父': 'fu',
-  '高': 'gao', '个': 'ge', '工': 'gong', '国': 'guo',
-  '好': 'hao', '和': 'he', '红': 'hong', '后': 'hou', '话': 'hua', '会': 'hui',
-  '家': 'jia', '见': 'jian', '就': 'jiu',
-  '开': 'kai', '看': 'kan', '可': 'ke',
-  '来': 'lai', '里': 'li', '两': 'liang',
-  '妈': 'ma', '么': 'me', '没': 'mei', '面': 'mian',
-  '你': 'ni', '年': 'nian',
-  '朋': 'peng',
-  '千': 'qian', '情': 'qing',
-  '人': 'ren', '日': 'ri',
-  '三': 'san', '上': 'shang', '说': 'shuo', '四': 'si', '岁': 'sui',
-  '他': 'ta', '天': 'tian', '听': 'ting',
-  '我': 'wo',
-  '下': 'xia', '先': 'xian', '想': 'xiang', '小': 'xiao', '心': 'xin',
-  '羊': 'yang', '也': 'ye', '一': 'yi', '应': 'ying', '用': 'yong', '有': 'you',
-  '在': 'zai', '这': 'zhe', '中': 'zhong', '主': 'zhu'
+// Traditional to simplified Chinese conversion for common characters
+const traditionalToSimplified = {
+  '漢': '汉', '國': '国', '說': '说', '車': '车', '門': '门', '東': '东', '馬': '马',
+  '長': '长', '時': '时', '書': '书', '見': '见', '風': '风', '無': '无', '開': '开',
+  '電': '电', '發': '发', '問': '问', '學': '学', '這': '这', '還': '还', '對': '对',
+  '麗': '丽', '華': '华', '實': '实', '點': '点', '經': '经', '樣': '样', '處': '处',
+  '體': '体', '師': '师', '義': '义', '數': '数', '來': '来', '關': '关', '幾': '几',
+  '後': '后', '語': '语', '當': '当', '頭': '头', '歲': '岁', '報': '报', '動': '动',
+  '務': '务', '員': '员', '難': '难', '產': '产', '單': '单', '讓': '让', '致': '致',
+  '兒': '儿', '鳥': '鸟', '專': '专', '區': '区', '決': '决', '萬': '万', '勝': '胜',
+  '總': '总', '麼': '么', '醫': '医', '衛': '卫', '氣': '气', '業': '业', '聲': '声'
 };
 
 const pinyin = {
   /**
-   * Convert a Chinese character to its pinyin
-   * @param {string} char - The character to convert
-   * @returns {string} The pinyin, or the original character if not found
+   * Convert a traditional Chinese character to simplified if possible
    */
-  convert(char) {
-    return pinyinMap[char] || char;
+  toSimplified(char) {
+    return traditionalToSimplified[char] || char;
   },
 
   /**
-   * Get the first letter of a string, handling Chinese characters
+   * Get the first letter of a string, handling various character types
    * @param {string} str - The string to process
-   * @returns {string} The first letter (capitalized)
+   * @returns {string} The first letter (capitalized) or category
    */
   getFirstLetter(str) {
-    if (!str || str.length === 0) return '#';
+    if (!str || typeof str !== 'string' || str.length === 0) return '#';
     
     const firstChar = str.charAt(0);
     
-    // If it's already a letter, return it capitalized
+    // Handle numbers at the beginning - keep them in the original numeric order
+    if (/[0-9]/.test(firstChar)) {
+      return firstChar;
+    }
+    
+    // If it's already a latin letter, return it capitalized
     if (/[A-Za-z]/.test(firstChar)) {
       return firstChar.toUpperCase();
     }
     
-    // Check our common first letters map
+    // Try direct lookup in common first letters map
     if (commonFirstLetters[firstChar]) {
       return commonFirstLetters[firstChar];
     }
     
-    // Check our pinyin map
-    const converted = pinyinMap[firstChar];
-    if (converted) {
-      return converted.charAt(0).toUpperCase();
+    // For traditional Chinese, try to convert to simplified first
+    const simplifiedChar = this.toSimplified(firstChar);
+    if (simplifiedChar !== firstChar && commonFirstLetters[simplifiedChar]) {
+      return commonFirstLetters[simplifiedChar];
     }
     
-    // For any other character, return # (for grouping)
+    // Check if it's a Chinese character (both simplified and traditional)
+    if (/[\u4e00-\u9fff\u3400-\u4dbf]/.test(firstChar)) {
+      // For Chinese characters without mapping, group under C for Chinese
+      return 'C';
+    }
+    
+    // For any other character (special chars, emoji, etc.)
     return '#';
   },
   
   /**
-   * Sort strings considering Chinese characters
+   * Sort strings considering character types for better organization
    * @param {string} a - First string
    * @param {string} b - Second string
    * @returns {number} Sort comparison result
    */
   compare(a, b) {
+    // Get first letters (or sorting categories)
     const aFirst = this.getFirstLetter(a);
     const bFirst = this.getFirstLetter(b);
     
-    return aFirst.localeCompare(bFirst);
+    // Different first letter/category - sort by that
+    if (aFirst !== bFirst) {
+      // Special sorting for numbers to ensure correct order (not alphabetical)
+      if (/[0-9]/.test(aFirst) && /[0-9]/.test(bFirst)) {
+        return parseInt(aFirst) - parseInt(bFirst);
+      }
+      
+      // Special handling to ensure # comes last
+      if (aFirst === '#') return 1;
+      if (bFirst === '#') return -1;
+      
+      // Numbers come before letters
+      if (/[0-9]/.test(aFirst) && /[A-Z]/.test(bFirst)) return -1;
+      if (/[A-Z]/.test(aFirst) && /[0-9]/.test(bFirst)) return 1;
+      
+      // Otherwise use standard lexicographical comparison
+      return aFirst.localeCompare(bFirst);
+    }
+    
+    // Same first letter - sort by full string
+    try {
+      return a.localeCompare(b, 'zh-CN');
+    } catch (e) {
+      // Fallback if locale not supported
+      return a.localeCompare(b);
+    }
   }
 };
 
