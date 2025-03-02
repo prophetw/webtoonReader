@@ -338,6 +338,66 @@
       -ms-user-select: none;
       user-select: none;
     }
+
+    /* Alphabet index styles */
+    .alphabet-index {
+      position: sticky;
+      top: 0;
+      background-color: #f8f8f8;
+      padding: 8px 0;
+      border-bottom: 1px solid #ddd;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      z-index: 4;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .index-letter {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      line-height: 24px;
+      text-align: center;
+      margin: 2px;
+      background-color: #007bff;
+      color: white;
+      border-radius: 50%;
+      font-weight: bold;
+      font-size: 14px;
+      cursor: pointer;
+      user-select: none;
+    }
+    
+    .index-letter:hover, .index-letter:active {
+      background-color: #0056b3;
+      transform: scale(1.1);
+    }
+    
+    .section-header {
+      background-color: #e9ecef;
+      padding: 8px 15px;
+      font-weight: bold;
+      border-bottom: 1px solid #dee2e6;
+      position: sticky;
+      top: 40px; /* Leave room for the alphabet index */
+      z-index: 3;
+    }
+    
+    /* Make room for sticky headers */
+    .list-panel > details:first-of-type {
+      margin-top: 50px;
+    }
+    
+    /* Enhance the comics list UI */
+    .list-panel summary {
+      padding: 12px 15px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .list-panel summary:hover {
+      background-color: rgba(0, 123, 255, 0.05);
+    }
   </style>
 
   <body>
