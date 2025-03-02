@@ -117,6 +117,9 @@ async function loadEpisodes(comicName) {
   }
 }
 
+// Keep track of scroll event handlers to avoid duplicates
+const scrollHandlers = new WeakMap();
+
 async function loadImages(comicName, episode, imagesContainer = null) {
   if (!episode) {
     ui.warning('没有找到该集', 2000);
@@ -136,10 +139,6 @@ async function loadImages(comicName, episode, imagesContainer = null) {
     
     // Debug output
     console.log(`Fetched ${images.length} images for ${comicName} - ${episode}`);
-    if (images.length > 0) {
-      console.log('First image URL:', images[0]);
-      console.log('Last image URL:', images[images.length - 1]);
-    }
     
     // Setup error handling for the container
     imageLoader.setupImageErrorHandling(container);
@@ -147,21 +146,40 @@ async function loadImages(comicName, episode, imagesContainer = null) {
     // Make sure container is scrolled to top
     container.scrollTop = 0;
     
+    // Remove any existing scroll handler to prevent duplicates
+    const oldHandler = scrollHandlers.get(container);
+    if (oldHandler) {
+      container.removeEventListener('scroll', oldHandler);
+      console.log('Removed old scroll handler');
+    }
+    
     // Load images with improved loader
     await imageLoader.loadImagesSequentially(images, container);
     
-    // Add a scroll event listener to load more images as user scrolls
+    // Add a THROTTLED scroll event listener to load more images as user scrolls
+    // This prevents multiple rapid calls when scrolling
+    let isThrottled = false;
     const scrollHandler = () => {
-      // Check if we're near bottom
-      const scrollPosition = container.scrollTop + container.clientHeight;
-      const scrollTotal = container.scrollHeight;
-      const scrollPercent = (scrollPosition / scrollTotal) * 100;
+      if (isThrottled) return;
       
-      if (scrollPercent > 70) {  // Load more when 70% scrolled
-        imageLoader.loadAllImages(container);
-      }
+      isThrottled = true;
+      setTimeout(() => {
+        isThrottled = false;
+        
+        // Check if we're near bottom
+        const scrollPosition = container.scrollTop + container.clientHeight;
+        const scrollTotal = container.scrollHeight;
+        const scrollPercent = (scrollPosition / scrollTotal) * 100;
+        
+        if (scrollPercent > 70) {  // Load more when 70% scrolled
+          console.log('Scroll threshold reached, loading more images');
+          imageLoader.loadAllImages(container);
+        }
+      }, 200); // Only run every 200ms at most
     };
     
+    // Store the handler so we can remove it later
+    scrollHandlers.set(container, scrollHandler);
     container.addEventListener('scroll', scrollHandler);
     
     // Start auto-scrolling if autoPlay is enabled

@@ -4,13 +4,15 @@ import imageLoader from './imageLoader.js';
 const scroll = {
   isScrolling: false,
   scrollAnimationFrame: null,
+  throttleTimer: null,
   
   smoothAutoScroll(element, onComplete) {
     let lastPosition = element.scrollTop;
     this.isScrolling = true;
     let consecutiveSamePositionCount = 0;
     
-    // Load all images as we start scrolling
+    // Load images as we start scrolling - but only once
+    console.log('Auto-scroll: Loading all images');
     imageLoader.loadAllImages(element);
   
     const scrollStep = () => {
@@ -22,6 +24,17 @@ const scroll = {
           lastPosition = element.scrollTop;
           consecutiveSamePositionCount = 0;
           this.scrollAnimationFrame = requestAnimationFrame(scrollStep);
+          
+          // Throttled check to load more images 
+          if (!this.throttleTimer) {
+            this.throttleTimer = setTimeout(() => {
+              this.throttleTimer = null;
+              const scrollPercent = (element.scrollTop / (element.scrollHeight - element.clientHeight)) * 100;
+              if (scrollPercent > 50) {
+                imageLoader.loadAllImages(element);
+              }
+            }, 500);
+          }
         } else {
           consecutiveSamePositionCount++;
           if (consecutiveSamePositionCount > 10) {
@@ -33,12 +46,6 @@ const scroll = {
           } else {
             this.scrollAnimationFrame = requestAnimationFrame(scrollStep);
           }
-        }
-        
-        // Check if we need to load more images
-        const scrollPercent = (element.scrollTop / (element.scrollHeight - element.clientHeight)) * 100;
-        if (scrollPercent > 50) {
-          imageLoader.loadAllImages(element);
         }
       } else {
         this.stopSmoothScroll();
@@ -56,6 +63,12 @@ const scroll = {
       cancelAnimationFrame(this.scrollAnimationFrame);
       this.scrollAnimationFrame = null;
     }
+    
+    if (this.throttleTimer) {
+      clearTimeout(this.throttleTimer);
+      this.throttleTimer = null;
+    }
+    
     this.isScrolling = false;
   },
   
@@ -64,9 +77,12 @@ const scroll = {
   },
   
   scrollToBottom(element) {
-    element.scrollTop = element.scrollHeight;
-    // When scrolling to bottom, make sure all images are loaded
+    console.log('Scrolling to bottom and loading all images');
     imageLoader.loadAllImages(element);
+    // Use setTimeout to ensure all images' DOM is updated before calculating final height
+    setTimeout(() => {
+      element.scrollTop = element.scrollHeight;
+    }, 100);
   }
 };
 

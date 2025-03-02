@@ -2,7 +2,13 @@ import config from './config.js';
 import ui from './ui.js';
 
 const imageLoader = {
+  // Keep track of which images we've started loading
+  loadingStarted: new Set(),
+  
   loadImagesSequentially(imageUrls, container) {
+    // Reset the tracking set for new image loading session
+    this.loadingStarted = new Set();
+    
     return new Promise((resolve) => {
       // Clear any previous images
       container.innerHTML = '';
@@ -42,24 +48,30 @@ const imageLoader = {
           if (entry.isIntersecting) {
             const img = entry.target;
             const src = img.getAttribute('data-src');
+            const index = img.getAttribute('data-index');
             
-            if (src && !img.src.includes(src)) {
-              console.log(`Loading image ${img.getAttribute('data-index')} from ${src}`);
+            // Check if we've already started loading this image
+            const loadingKey = `${index}:${src}`;
+            if (src && !this.loadingStarted.has(loadingKey)) {
+              this.loadingStarted.add(loadingKey);
+              console.log(`Loading image ${index} from ${src}`);
+              
+              // Start loading the image
               img.src = src;
               
               // Remove the placeholder styling once loaded
-              img.onload = function() {
+              img.onload = () => {
                 img.style.minHeight = 'auto';
                 img.classList.add('loaded');
-                observer.unobserve(img);  // Stop observing once loaded
+                observer.unobserve(img);
               };
               
-              img.onerror = function() {
-                console.error(`Failed to load image ${img.getAttribute('data-index')} from ${src}`);
+              img.onerror = () => {
+                console.error(`Failed to load image ${index} from ${src}`);
                 img.alt = '加载失败';
                 img.style.backgroundColor = '#f0f0f0';
                 img.style.minHeight = '150px';
-                observer.unobserve(img);  // Stop observing
+                observer.unobserve(img);
               };
             }
           }
@@ -79,8 +91,12 @@ const imageLoader = {
       for (let i = 0; i < Math.min(5, imageElements.length); i++) {
         const img = imageElements[i];
         const src = img.getAttribute('data-src');
+        const index = img.getAttribute('data-index');
+        
         if (src) {
-          console.log(`Preloading image ${i} from ${src}`);
+          const loadingKey = `${index}:${src}`;
+          this.loadingStarted.add(loadingKey);
+          console.log(`Preloading image ${index} from ${src}`);
           img.src = src;
         }
       }
@@ -95,11 +111,21 @@ const imageLoader = {
   
   // Method to force load all remaining unloaded images
   loadAllImages(container) {
+    console.log('loadAllImages called');
     const unloadedImages = container.querySelectorAll('img:not(.loaded)');
+    console.log(`Found ${unloadedImages.length} unloaded images`);
+    
     unloadedImages.forEach(img => {
       const src = img.getAttribute('data-src');
-      if (src && !img.src.includes(src)) {
-        img.src = src;
+      const index = img.getAttribute('data-index');
+      
+      if (src) {
+        const loadingKey = `${index}:${src}`;
+        if (!this.loadingStarted.has(loadingKey)) {
+          this.loadingStarted.add(loadingKey);
+          console.log(`Loading image ${index} from loadAllImages`);
+          img.src = src;
+        }
       }
     });
   },
