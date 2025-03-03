@@ -84,8 +84,65 @@ const ui = {
   
   setBrightness(value) {
     document.body.style.filter = `brightness(${value}%)`;
+    // Update the displayed value
+    const brightnessValue = document.getElementById('brightnessValue');
+    if (brightnessValue) {
+      brightnessValue.textContent = `${value}%`;
+    }
+    // Save the brightness value to localStorage
+    localStorage.setItem('brightness', value);
   },
   
+  // Load saved brightness from localStorage
+  loadBrightness() {
+    const savedBrightness = localStorage.getItem('brightness');
+    const brightnessSlider = document.getElementById('brightnessSlider');
+    
+    if (savedBrightness) {
+      const brightnessValue = parseInt(savedBrightness, 10);
+      // Apply the saved brightness
+      this.setBrightness(brightnessValue);
+      
+      // Update the slider value if it exists
+      if (brightnessSlider) {
+        brightnessSlider.value = brightnessValue;
+      }
+    } else {
+      // Default brightness is 100%
+      this.setBrightness(100);
+      if (brightnessSlider) {
+        brightnessSlider.value = 100;
+      }
+    }
+  },
+  
+  // Initialize brightness control
+  initBrightnessControl() {
+    const brightnessSlider = document.getElementById('brightnessSlider');
+    if (brightnessSlider) {
+      // Use both input and change events for different scenarios
+      // 'input' fires continuously as the user drags the slider
+      brightnessSlider.addEventListener('input', (e) => {
+        this.setBrightness(e.target.value);
+      });
+      
+      // 'change' fires when the slider is released
+      brightnessSlider.addEventListener('change', (e) => {
+        this.setBrightness(e.target.value);
+      });
+      
+      // For touch devices, add touch events for better response
+      brightnessSlider.addEventListener('touchmove', (e) => {
+        // Prevent default to avoid page scrolling while adjusting brightness
+        e.preventDefault();
+        this.setBrightness(e.target.value);
+      }, { passive: false });
+      
+      // Load initial brightness
+      this.loadBrightness();
+    }
+  },
+
   togglePanel(panelId) {
     const panel = document.getElementById(panelId);
     const isVisible = panel.style.transform === 'translateX(0px)';

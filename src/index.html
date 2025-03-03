@@ -539,6 +539,30 @@
     .index-letter[data-letter^="9"] {
       background-color: #28a745; /* Green for numbers */
     }
+
+    /* Add brightness slider styles */
+    .brightness-control {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      margin: 15px 0;
+    }
+    
+    .brightness-control label {
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+    }
+    
+    .brightness-value {
+      font-weight: bold;
+      color: #007bff;
+    }
+    
+    .brightness-slider {
+      width: 100%;
+      height: 20px;
+    }
   </style>
 
   <body>
@@ -577,7 +601,21 @@
       <div class="opt-item">
         <button id="back-to-top">回到顶部</button>
         <button id="back-to-bottom">回到底部</button>
-        <button id="dim">夜间模式</button>
+        <!-- Improve brightness slider with more attributes -->
+        <div class="brightness-control">
+          <label for="brightnessSlider">
+            亮度调节 <span id="brightnessValue" class="brightness-value">100%</span>
+          </label>
+          <input type="range" 
+                 id="brightnessSlider" 
+                 class="brightness-slider" 
+                 min="30" 
+                 max="150" 
+                 step="5" 
+                 value="100"
+                 aria-label="亮度调节"
+                 autocomplete="off">
+        </div>
       </div>
       <div class="opt-item">
         <div>当前漫画: <span id="curComicName"></span></div>

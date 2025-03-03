@@ -187,9 +187,9 @@ function calculateSectionPositions(container) {
     state.sectionPositions.set(section.id, targetPosition);
   });
   
-  console.log('Section positions calculated:', 
-    Array.from(state.sectionPositions.entries()).map(([id, pos]) => `${id}: ${pos}`).join(', ')
-  );
+  // console.log('Section positions calculated:', 
+  //   Array.from(state.sectionPositions.entries()).map(([id, pos]) => `${id}: ${pos}`).join(', ')
+  // );
 }
 
 // Replace the scrollToSection function with this version that uses cached positions
@@ -690,9 +690,9 @@ function initEventListeners() {
   });
   
   // Brightness control
-  document.getElementById('dim').addEventListener(action, () => {
-    ui.setBrightness(50);
-  });
+  // document.getElementById('dim').addEventListener(action, () => {
+  //   ui.setBrightness(50);
+  // });
   
   // Speed settings
   const speedValListContainer = document.getElementById('speed-setting');
@@ -752,6 +752,10 @@ function initSpeedSettings() {
 
 async function initialize() {
   try {
+    // Initialize brightness control right away
+    ui.loadBrightness();
+    ui.initBrightnessControl();
+    
     const comics = await loadNecessaryData();
     await displayComics(comics);
     await checkLastRead();
