@@ -540,69 +540,64 @@
       background-color: #28a745; /* Green for numbers */
     }
 
-    /* Add brightness slider styles */
-    .brightness-control {
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      margin: 15px 0;
+    /* Tag styling */
+    .tag-container {
+      margin: 10px 0;
     }
     
-    .brightness-control label {
-      margin-bottom: 8px;
+    .tag-chips {
       display: flex;
-      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin: 10px 0;
     }
     
-    .brightness-value {
+    .tag-chip {
+      padding: 3px 8px;
+      border-radius: 10px;
+      background-color: #e2f0ff;
+      display: inline-flex;
+      align-items: center;
+      font-size: 13px;
+    }
+    
+    .tag-chip .remove {
+      margin-left: 5px;
+      cursor: pointer;
       font-weight: bold;
-      color: #007bff;
     }
     
-    .brightness-slider {
+    /* Tag category colors */
+    .tag-chip.story { background-color: #e2f0ff; }
+    .tag-chip.character { background-color: #ffeaef; }
+    .tag-chip.art { background-color: #ebf7e8; }
+    .tag-chip.genre { background-color: #f2eaff; }
+    .tag-chip.rating { background-color: #fff8e0; }
+    .tag-chip.custom { background-color: #f0f0f0; }
+    
+    .tag-suggestions {
+      position: absolute;
       width: 100%;
-      height: 30px; /* Taller for easier touch */
-      -webkit-appearance: none;
-      appearance: none;
-      background: linear-gradient(to right, #333333, #ffffff);
-      outline: none;
-      border-radius: 15px;
-      cursor: pointer;
-      touch-action: none; /* Critical for preventing scroll/zoom on touch */
+      max-height: 200px;
+      overflow-y: auto;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 0 0 5px 5px;
+      z-index: 100;
+      display: none;
     }
     
-    /* Slider thumb styles */
-    .brightness-slider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 25px;
-      height: 25px;
-      background-color: #007bff;
-      border-radius: 50%;
-      border: 2px solid white;
-      box-shadow: 0 0 2px rgba(0,0,0,0.5);
+    .tag-suggestions.active {
+      display: block;
+    }
+    
+    .tag-suggestion {
+      padding: 8px 10px;
       cursor: pointer;
     }
     
-    .brightness-slider::-moz-range-thumb {
-      width: 25px;
-      height: 25px;
-      background-color: #007bff;
-      border-radius: 50%;
-      border: 2px solid white;
-      box-shadow: 0 0 2px rgba(0,0,0,0.5);
-      cursor: pointer;
-    }
-    
-    /* Add active state for touch feedback */
-    .brightness-slider:active::-webkit-slider-thumb {
-      background-color: #0056b3;
-      transform: scale(1.2);
-    }
-    
-    .brightness-slider:active::-moz-range-thumb {
-      background-color: #0056b3;
-      transform: scale(1.2);
+    .tag-suggestion:hover {
+      background-color: #f0f0f0;
     }
   </style>
 
@@ -642,24 +637,25 @@
       <div class="opt-item">
         <button id="back-to-top">回到顶部</button>
         <button id="back-to-bottom">回到底部</button>
-        <!-- Enhanced brightness slider for better touch support -->
-        <div class="brightness-control">
-          <label for="brightnessSlider">
-            亮度调节 <span id="brightnessValue" class="brightness-value">100%</span>
-          </label>
-          <input type="range" 
-                 id="brightnessSlider" 
-                 class="brightness-slider" 
-                 min="30" 
-                 max="150" 
-                 step="5" 
-                 value="100"
-                 aria-label="亮度调节"
-                 autocomplete="off">
-        </div>
+        <button id="dim">夜间模式</button>
       </div>
       <div class="opt-item">
         <div>当前漫画: <span id="curComicName"></span></div>
+        
+        <!-- Improved tag input -->
+        <div class="tag-container">
+          <label>标签:</label>
+          <div id="tagChips" class="tag-chips"></div>
+          <div style="position: relative;">
+            <input id="tagInput" type="text" placeholder="输入标签后按回车添加" style="width: 100%;">
+            <div id="tagSuggestions" class="tag-suggestions"></div>
+          </div>
+          <div style="margin-top: 8px;">
+            <button id="saveTag">保存</button>
+            <button id="clearTags">清空</button>
+          </div>
+        </div>
+        
         <div>
           tags:
           <input id="tagInput" type="text" placeholder="填入 tags 剧情,嗷嗷" />

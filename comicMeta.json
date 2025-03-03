@@ -603,5 +603,13 @@
     "tags": [],
     "cover": "",
     "score": 0
+  },
+  "comicA": {
+    "tags": [
+      "画风",
+      "好看"
+    ],
+    "cover": "",
+    "score": 0
   }
 }

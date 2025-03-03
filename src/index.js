@@ -5,6 +5,7 @@ import scroll from './scroll.js';
 import imageLoader from './imageLoader.js';
 import utils from './utils.js';
 import groupByLetters from './groupByLettersESM.js';
+import tagManager from './tagManager.js';  // Add the tagManager import
 
 // Use more reliable touch detection
 const isMobile = utils.isTouchDevice();
@@ -354,13 +355,22 @@ async function loadImages(comicName, episode, imagesContainer = null) {
 }
 
 function updateComicMeta() {
-  const tagInputEle = document.getElementById('tagInput');
   const scoreInputEle = document.getElementById('scoreInput');
   const tagInputEpiEle = document.getElementById('tagInputEpi');
   const scoreInputEpiEle = document.getElementById('scoreInputEpi');
   
-  const updateTagsAndUI = () => {
-    const tags = tagInputEle.value.split(',').filter(tag => tag.trim());
+  // Initialize the tag manager
+  tagManager.initializeTagInput(
+    'tagInput',
+    'tagChips',
+    'tagSuggestions',
+    'saveTag',
+    'clearTags'
+  );
+  
+  // Listen for tagsUpdated event from tagManager
+  document.addEventListener('tagsUpdated', (e) => {
+    const tags = e.detail.tags;
     
     if (state.comicMetaInfo && state.curComicName) {
       if (!state.comicMetaInfo[state.curComicName]) {
@@ -378,7 +388,7 @@ function updateComicMeta() {
           ui.warning('标签更新失败', 2000, 'top');
         });
     }
-  };
+  });
   
   const updateScoreAndUI = () => {
     const score = parseInt(scoreInputEle.value) || 0;
@@ -411,8 +421,8 @@ function updateComicMeta() {
   
   // Episode tag and score handling could be added here
   
-  document.getElementById('saveTag').addEventListener(action, updateTagsAndUI);
-  document.getElementById('saveScore').addEventListener(action, updateScoreAndUI);
+  // Still keep the score save button handler
+  // document.getElementById('saveScore').addEventListener(action, updateScoreAndUI);
 }
 
 function loadNextEpisode(needConfirm = false) {
@@ -615,7 +625,12 @@ function initEventListeners() {
       
       if (state.comicMetaInfo && state.comicMetaInfo[state.curComicName]) {
         const { tags = [], score = 0 } = state.comicMetaInfo[state.curComicName];
-        document.getElementById('tagInput').value = tags.join(',');
+        
+        // Set tags in the tagManager
+        tagManager.setCurrentTags(tags);
+        tagManager.renderTagChips(document.getElementById('tagChips'));
+        
+        // Update score input
         document.getElementById('scoreInput').value = score;
       }
     }
