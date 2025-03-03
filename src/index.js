@@ -4,7 +4,7 @@ import ui from './ui.js';
 import scroll from './scroll.js';
 import imageLoader from './imageLoader.js';
 import utils from './utils.js';
-import pinyin from './pinyin.js';
+import groupByLetters from './groupByLettersESM.js';
 
 // Use more reliable touch detection
 const isMobile = utils.isTouchDevice();
@@ -49,25 +49,22 @@ async function displayComics(comics) {
   indexContainer.className = 'alphabet-index';
   comicsContainer.appendChild(indexContainer);
   
-  // Sort comics using enhanced title handling
-  const sortedComics = [...comics].sort((a, b) => pinyin.compare(a, b));
+  // Group comics by first letter using groupByLetters
+  const comicsByCategory = groupByLetters(comics);
   
-  // Group comics by category
-  const comicsByCategory = {};
+  // Get categories in display order (letters array from groupByLettersESM)
+  const letters = [
+    // Numbers first
+    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+    // Then alphabetical
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+    'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+    // Special chars last
+    '#'
+  ];
   
-  // Process each comic for grouping
-  sortedComics.forEach(comic => {
-    const category = pinyin.getFirstLetter(comic);
-    
-    if (!comicsByCategory[category]) {
-      comicsByCategory[category] = [];
-    }
-    
-    comicsByCategory[category].push(comic);
-  });
-  
-  // Get categories in display order
-  const categories = pinyin.getSortedCategories().filter(
+  // Filter categories to only those that have comics
+  const categories = letters.filter(
     category => comicsByCategory[category] && comicsByCategory[category].length > 0
   );
   
@@ -77,7 +74,16 @@ async function displayComics(comics) {
     letterButton.className = 'index-letter';
     letterButton.textContent = category;
     letterButton.setAttribute('data-letter', category);
-    letterButton.title = pinyin.getCategoryName(category); // Add tooltip
+    
+    // Add appropriate title/tooltip based on category
+    if (category === '#') {
+      letterButton.title = "特殊字符";
+    } else if (/^\d$/.test(category)) {
+      letterButton.title = "数字";
+    } else {
+      letterButton.title = category;
+    }
+    
     indexContainer.appendChild(letterButton);
   });
   
@@ -103,8 +109,14 @@ async function displayComics(comics) {
       sectionHeader.className = 'section-header';
       sectionHeader.id = `section-${category}`;
       
-      // Get nice category name and count
-      const categoryName = pinyin.getCategoryName(category);
+      // Get category name and count
+      let categoryName = category;
+      if (category === '#') {
+        categoryName = "特殊字符";
+      } else if (/^\d$/.test(category)) {
+        categoryName = "数字";
+      }
+      
       const count = comics.length;
       
       sectionHeader.innerHTML = `
