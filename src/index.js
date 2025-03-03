@@ -160,28 +160,60 @@ async function displayComics(comics) {
 
 // Add this new function for precise section scrolling
 function scrollToSection(container, section) {
-  // Get the position of the section relative to the container
+  // Force a layout recalculation to get the most up-to-date positions
+  document.body.getBoundingClientRect();
+  
+  // Get the current scroll position of the container
+  const currentScrollTop = container.scrollTop;
+  
+  // Calculate container's top position (considering any offset)
   const containerRect = container.getBoundingClientRect();
+  const containerTop = containerRect.top + window.pageYOffset;
+  
+  // Get the section's absolute position
   const sectionRect = section.getBoundingClientRect();
+  const sectionAbsoluteTop = sectionRect.top + window.pageYOffset;
   
-  // Calculate the section's position relative to the container's top
-  let scrollPosition = container.scrollTop + (sectionRect.top - containerRect.top);
+  // Calculate the offset from the container's top
+  const sectionOffsetFromContainer = sectionAbsoluteTop - containerTop;
   
-  // Adjust for sticky headers - get height of alphabet index
+  // Get the height of sticky elements that affect positioning
+  const header = document.querySelector('header');
+  const headerHeight = header ? header.offsetHeight : 0;
+  
   const alphabetIndex = container.querySelector('.alphabet-index');
   const indexHeight = alphabetIndex ? alphabetIndex.offsetHeight : 0;
   
-  // Subtract the height of sticky elements to position correctly
-  scrollPosition -= indexHeight;
+  const totalStickyHeight = headerHeight + indexHeight;
+  
+  // The target scroll position needs to account for:
+  // 1. Current container scroll position
+  // 2. Section's offset from container
+  // 3. Height of sticky elements
+  let targetScrollPosition = currentScrollTop + sectionOffsetFromContainer - totalStickyHeight;
   
   // Ensure we don't scroll past the top
-  scrollPosition = Math.max(0, scrollPosition);
+  targetScrollPosition = Math.max(0, targetScrollPosition);
   
-  // Smooth scroll to the calculated position
-  container.scrollTo({
-    top: scrollPosition,
-    behavior: 'smooth'
+  console.log('Scrolling to section', {
+    section: section.id,
+    currentScroll: currentScrollTop,
+    sectionOffset: sectionOffsetFromContainer,
+    stickyHeight: totalStickyHeight,
+    target: targetScrollPosition
   });
+  
+  // Immediately set the scroll position without animation first
+  // This helps ensure we get an accurate position
+  container.scrollTop = targetScrollPosition;
+  
+  // Then use smooth scrolling for visual effect (small offset to ensure it still animates)
+  setTimeout(() => {
+    container.scrollTo({
+      top: targetScrollPosition,
+      behavior: 'smooth'
+    });
+  }, 50);
 }
 
 async function checkLastRead() {
