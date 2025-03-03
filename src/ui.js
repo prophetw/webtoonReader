@@ -119,28 +119,86 @@ const ui = {
   // Initialize brightness control
   initBrightnessControl() {
     const brightnessSlider = document.getElementById('brightnessSlider');
-    if (brightnessSlider) {
-      // Use both input and change events for different scenarios
-      // 'input' fires continuously as the user drags the slider
-      brightnessSlider.addEventListener('input', (e) => {
-        this.setBrightness(e.target.value);
-      });
-      
-      // 'change' fires when the slider is released
-      brightnessSlider.addEventListener('change', (e) => {
-        this.setBrightness(e.target.value);
-      });
-      
-      // For touch devices, add touch events for better response
-      brightnessSlider.addEventListener('touchmove', (e) => {
-        // Prevent default to avoid page scrolling while adjusting brightness
-        e.preventDefault();
-        this.setBrightness(e.target.value);
-      }, { passive: false });
-      
-      // Load initial brightness
-      this.loadBrightness();
-    }
+    if (!brightnessSlider) return;
+    
+    // For mobile devices: add specific touch handlers to prevent scrolling
+    let touchActive = false;
+    
+    // Handle touch start on slider
+    brightnessSlider.addEventListener('touchstart', (e) => {
+      touchActive = true;
+      // Update brightness based on touch position
+      this.updateBrightnessFromTouch(e);
+    }, { passive: false });
+    
+    // Handle touch move for continuous update
+    brightnessSlider.addEventListener('touchmove', (e) => {
+      if (touchActive) {
+        e.preventDefault(); // Prevent scrolling while adjusting slider
+        e.stopPropagation();
+        this.updateBrightnessFromTouch(e);
+      }
+    }, { passive: false });
+    
+    // Handle touch end
+    brightnessSlider.addEventListener('touchend', () => {
+      touchActive = false;
+    }, { passive: true });
+    
+    brightnessSlider.addEventListener('touchcancel', () => {
+      touchActive = false;
+    }, { passive: true });
+    
+    // Standard input event for both desktop and as backup for mobile
+    brightnessSlider.addEventListener('input', (e) => {
+      this.setBrightness(e.target.value);
+    });
+    
+    // Change event for when the interaction ends
+    brightnessSlider.addEventListener('change', (e) => {
+      this.setBrightness(e.target.value);
+    });
+    
+    // Load initial brightness
+    this.loadBrightness();
+    
+    // Fix for iOS/Safari where the slider might not register properly
+    setTimeout(() => {
+      const currentValue = brightnessSlider.value;
+      this.setBrightness(currentValue);
+    }, 100);
+  },
+  
+  // Helper function to get brightness value from touch position
+  updateBrightnessFromTouch(e) {
+    if (!e.touches || e.touches.length === 0) return;
+    
+    const slider = e.target;
+    const touch = e.touches[0];
+    const sliderRect = slider.getBoundingClientRect();
+    
+    // Calculate relative position within the slider (0 to 1)
+    const relativePosition = Math.max(0, Math.min(1, 
+      (touch.clientX - sliderRect.left) / sliderRect.width
+    ));
+    
+    // Convert to slider value range
+    const min = parseInt(slider.min, 10) || 30;
+    const max = parseInt(slider.max, 10) || 150;
+    const step = parseInt(slider.step, 10) || 5;
+    
+    // Calculate value based on position and step
+    let value = min + (max - min) * relativePosition;
+    
+    // Round to nearest step
+    value = Math.round(value / step) * step;
+    
+    // Update slider and apply brightness
+    slider.value = value;
+    this.setBrightness(value);
+    
+    // Debug output to console (can be removed in production)
+    console.log(`Brightness updated from touch: ${value}%`);
   },
 
   togglePanel(panelId) {

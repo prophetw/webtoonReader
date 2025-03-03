@@ -752,9 +752,12 @@ function initSpeedSettings() {
 
 async function initialize() {
   try {
-    // Initialize brightness control right away
-    ui.loadBrightness();
-    ui.initBrightnessControl();
+    // Initialize brightness control right away with a more reliable approach
+    setTimeout(() => {
+      ui.loadBrightness();
+      ui.initBrightnessControl();
+      console.log('Brightness control initialized');
+    }, 0);
     
     const comics = await loadNecessaryData();
     await displayComics(comics);
