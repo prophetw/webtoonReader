@@ -24,7 +24,8 @@ const state = {
   touchMoved: false,
   minSwipeDistance: 30,
   maxTapDistance: 10,
-  maxTapDuration: 300
+  maxTapDuration: 300,
+  sectionPositions: new Map()
 };
 
 // Initialize media controls for keeping screen active
@@ -155,11 +156,20 @@ async function displayComics(comics) {
     }
   });
   
+  // Calculate and store initial section positions after rendering
+  calculateSectionPositions(comicsContainer);
+  
   ui.hideAddressBar();
 }
 
-// Completely revised function for accurate section navigation
-function scrollToSection(container, section) {
+// Add this new function to calculate and store section positions
+function calculateSectionPositions(container) {
+  // Clear existing positions
+  state.sectionPositions.clear();
+  
+  // Get all section headers
+  const sections = container.querySelectorAll('.section-header');
+  
   // Get sticky elements heights
   const header = document.querySelector('header');
   const headerHeight = header ? header.offsetHeight : 0;
@@ -170,25 +180,47 @@ function scrollToSection(container, section) {
   // Calculate total offset for sticky elements
   const totalOffset = headerHeight + indexHeight;
   
-  // Use direct offset calculation instead of relative positioning
-  // This is much more reliable for sections that are off-screen
-  const sectionTop = section.offsetTop;
-  
-  // Calculate the exact position we want to scroll to
-  const targetPosition = Math.max(0, sectionTop - totalOffset);
-  
-  console.log('Direct scrolling to', {
-    section: section.id,
-    sectionOffsetTop: sectionTop,
-    totalStickyOffset: totalOffset,
-    targetScrollPosition: targetPosition
+  // Store the position for each section
+  sections.forEach(section => {
+    const sectionTop = section.offsetTop;
+    const targetPosition = Math.max(0, sectionTop - totalOffset);
+    state.sectionPositions.set(section.id, targetPosition);
   });
+  
+  console.log('Section positions calculated:', 
+    Array.from(state.sectionPositions.entries()).map(([id, pos]) => `${id}: ${pos}`).join(', ')
+  );
+}
+
+// Replace the scrollToSection function with this version that uses cached positions
+function scrollToSection(container, section) {
+  // Get section ID
+  const sectionId = section.id;
+  
+  // If we don't have the position cached, recalculate all positions
+  if (!state.sectionPositions.has(sectionId)) {
+    calculateSectionPositions(container);
+  }
+  
+  // Get the cached position
+  let targetPosition = state.sectionPositions.get(sectionId);
+  
+  console.log('Scrolling to section using cached position:', {
+    section: sectionId,
+    targetPosition
+  });
+  
+  // Safety check - if the position seems wrong, recalculate
+  if (targetPosition > container.scrollHeight - container.clientHeight) {
+    console.log('Position seems incorrect, recalculating...');
+    calculateSectionPositions(container);
+    targetPosition = state.sectionPositions.get(sectionId);
+  }
   
   // Do a direct scroll without animation first to ensure reliability
   container.scrollTop = targetPosition;
   
   // Then apply smooth scrolling for visual polish
-  // Using requestAnimationFrame for better performance
   requestAnimationFrame(() => {
     container.scrollTo({
       top: targetPosition,
@@ -692,6 +724,14 @@ function initEventListeners() {
   
   // Initialize mobile interactions
   initMobileInteractions();
+  
+  // Add resize handler to recalculate positions
+  window.addEventListener('resize', utils.debounce(() => {
+    const comicsContainer = document.getElementById('comics');
+    if (comicsContainer) {
+      calculateSectionPositions(comicsContainer);
+    }
+  }, 250));
 }
 
 function initSpeedSettings() {
