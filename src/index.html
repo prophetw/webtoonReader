@@ -609,8 +609,6 @@
       display: inline-block;
       font-size: 24px;
       cursor: pointer;
-      direction: ltr;
-      unicode-bidi: bidi-override;
     }
     
     .star-rating .star {
@@ -620,10 +618,18 @@
       padding: 0 2px;
     }
     
-    .star-rating .star:hover,
-    .star-rating .star:hover ~ .star,
-    .star-rating .star.active,
+    /* Fix the active star coloring logic */
+    .star-rating .star.active {
+      color: #ffcc00;
+    }
+    
+    /* Remove the problematic selector that colors all previous stars */
     .star-rating .star.active ~ .star {
+      /* color: #ddd; */
+    }
+    
+    /* For hover effects, handle individually */
+    .star-rating .star:hover {
       color: #ffcc00;
     }
     

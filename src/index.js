@@ -435,7 +435,7 @@ function initStarRating() {
       // Update visual display
       ratingValue.textContent = rating;
       
-      // Update active state of stars
+      // Update active state of stars - fix the logic here
       stars.forEach(s => {
         const starRating = parseInt(s.getAttribute('data-rating'));
         if (starRating <= rating) {
@@ -449,9 +449,65 @@ function initStarRating() {
       saveRating(rating);
     });
   });
+  
+  // Add hover effects
+  if (!isMobile) {
+    stars.forEach(star => {
+      // On mouse enter, highlight this star and all stars before it
+      star.addEventListener('mouseenter', function() {
+        const hoverRating = parseInt(this.getAttribute('data-rating'));
+        
+        stars.forEach(s => {
+          const starRating = parseInt(s.getAttribute('data-rating'));
+          if (starRating <= hoverRating) {
+            s.style.color = '#ffcc00'; // Highlight color
+          } else {
+            s.style.color = ''; // Reset to default CSS color
+          }
+        });
+      });
+      
+      // On mouse leave, restore the active state
+      star.addEventListener('mouseleave', function() {
+        stars.forEach(s => {
+          s.style.color = ''; // Reset to CSS-controlled color
+        });
+      });
+    });
+    
+    // When mouse leaves the entire container, ensure we reset to saved state
+    starContainer.addEventListener('mouseleave', function() {
+      const currentRating = parseInt(scoreInput.value || '0');
+      updateStarRatingDisplay(currentRating);
+    });
+  }
 }
 
-// Save rating to API and update UI
+// // Helper function to update star rating display - UPDATED LOGIC
+// function updateStarRatingDisplay(score) {
+//   const stars = document.querySelectorAll('#ratingStars .star');
+//   const ratingValue = document.getElementById('ratingValue');
+//   const scoreInput = document.getElementById('scoreInput');
+  
+//   // Update hidden input value
+//   if (scoreInput) scoreInput.value = score;
+  
+//   // Update rating value display
+//   if (ratingValue) ratingValue.textContent = score;
+  
+//   // Update stars display - FIX THE LOGIC HERE
+//   if (stars && stars.length) {
+//     stars.forEach(star => {
+//       const rating = parseInt(star.getAttribute('data-rating'));
+//       if (rating <= score) {
+//         star.classList.add('active');
+//       } else {
+//         star.classList.remove('active');
+//       }
+//     });
+//   }
+// }
+
 function saveRating(rating) {
   if (state.comicMetaInfo && state.curComicName) {
     if (!state.comicMetaInfo[state.curComicName]) {
@@ -817,7 +873,7 @@ function updateStarRatingDisplay(score) {
   // Update rating value display
   if (ratingValue) ratingValue.textContent = score;
   
-  // Update stars display
+  // Update stars display - FIX THE LOGIC HERE
   if (stars && stars.length) {
     stars.forEach(star => {
       const rating = parseInt(star.getAttribute('data-rating'));
