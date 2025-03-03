@@ -94,7 +94,8 @@ async function displayComics(comics) {
       const letter = target.getAttribute('data-letter');
       const section = document.getElementById(`section-${letter}`);
       if (section) {
-        section.scrollIntoView({ behavior: 'smooth' });
+        // Replace scrollIntoView with precise scrolling
+        scrollToSection(comicsContainer, section);
       }
     }
   });
@@ -155,6 +156,32 @@ async function displayComics(comics) {
   });
   
   ui.hideAddressBar();
+}
+
+// Add this new function for precise section scrolling
+function scrollToSection(container, section) {
+  // Get the position of the section relative to the container
+  const containerRect = container.getBoundingClientRect();
+  const sectionRect = section.getBoundingClientRect();
+  
+  // Calculate the section's position relative to the container's top
+  let scrollPosition = container.scrollTop + (sectionRect.top - containerRect.top);
+  
+  // Adjust for sticky headers - get height of alphabet index
+  const alphabetIndex = container.querySelector('.alphabet-index');
+  const indexHeight = alphabetIndex ? alphabetIndex.offsetHeight : 0;
+  
+  // Subtract the height of sticky elements to position correctly
+  scrollPosition -= indexHeight;
+  
+  // Ensure we don't scroll past the top
+  scrollPosition = Math.max(0, scrollPosition);
+  
+  // Smooth scroll to the calculated position
+  container.scrollTo({
+    top: scrollPosition,
+    behavior: 'smooth'
+  });
 }
 
 async function checkLastRead() {
@@ -564,7 +591,8 @@ function initEventListeners() {
         const letter = e.target.getAttribute('data-letter');
         const section = document.getElementById(`section-${letter}`);
         if (section) {
-          section.scrollIntoView({ behavior: 'smooth' });
+          // Replace scrollIntoView with the new scrolling function
+          scrollToSection(document.getElementById('comics'), section);
         }
       }
     });
