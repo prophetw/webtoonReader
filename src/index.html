@@ -599,6 +599,53 @@
     .tag-suggestion:hover {
       background-color: #f0f0f0;
     }
+
+    /* Rating styling */
+    .rating-container {
+      margin: 15px 0;
+    }
+    
+    .star-rating {
+      display: inline-block;
+      font-size: 24px;
+      cursor: pointer;
+      direction: ltr;
+      unicode-bidi: bidi-override;
+    }
+    
+    .star-rating .star {
+      color: #ddd;
+      display: inline-block;
+      transition: color 0.2s ease;
+      padding: 0 2px;
+    }
+    
+    .star-rating .star:hover,
+    .star-rating .star:hover ~ .star,
+    .star-rating .star.active,
+    .star-rating .star.active ~ .star {
+      color: #ffcc00;
+    }
+    
+    .rating-value {
+      display: inline-block;
+      margin-left: 10px;
+      font-weight: bold;
+    }
+    
+    /* Comic list rating display */
+    .score {
+      display: inline-block;
+      padding: 0 10px;
+      background: #1a9406;
+      color: white;
+      border-radius: 5px;
+    }
+    
+    .score .stars {
+      margin-left: 4px;
+      color: #ffcc00;
+    }
   </style>
 
   <body>
@@ -656,28 +703,19 @@
           </div>
         </div>
         
-        <div>
-          tags:
-          <input id="tagInput" type="text" placeholder="填入 tags 剧情,嗷嗷" />
-          <button id="saveTag">保存</button>
-        </div>
-        <div>
-          评分：<input id="scoreInput" type="text" placeholder="填入分数" />
-          <button id="saveScore">保存</button>
-        </div>
-        <div>当前集数: <span id="curComicEpi"></span></div>
-        <div>
-          tags:
-          <input
-            id="tagInputEpi"
-            type="text"
-            placeholder="填入 tags 剧情,嗷嗷"
-          />
-          <button id="saveTagEpi">保存</button>
-        </div>
-        <div>
-          评分：<input id="scoreInputEpi" type="text" placeholder="填入分数" />
-          <button id="saveScoreEpi">保存</button>
+        <div class="rating-container">
+          <label for="ratingStars">评分：</label>
+          <div class="star-rating" id="ratingStars">
+            <span class="star" data-rating="1">★</span>
+            <span class="star" data-rating="2">★</span>
+            <span class="star" data-rating="3">★</span>
+            <span class="star" data-rating="4">★</span>
+            <span class="star" data-rating="5">★</span>
+          </div>
+          <div class="rating-value">
+            <span id="ratingValue">0</span>/5
+          </div>
+          <input id="scoreInput" type="hidden" value="0">
         </div>
       </div>
     </div>

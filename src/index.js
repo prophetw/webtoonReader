@@ -142,7 +142,8 @@ async function displayComics(comics) {
           if (meta) {
             const { tags = [], score = 0 } = meta;
             if ((tags && tags.length > 0) || score !== 0) {
-              summary.innerHTML = `${comic} <span class="tags">${tags.join(',')}</span> <span class="score">评分：${score}</span>`;
+              const starDisplay = formatStarRating(score);
+              summary.innerHTML = `${comic} <span class="tags">${tags.join(',')}</span> <span class="score">评分：${score} <span class="stars">${starDisplay}</span></span>`;
             } else {
               summary.textContent = comic;
             }
@@ -299,7 +300,7 @@ async function loadImages(comicName, episode, imagesContainer = null) {
     
     document.title = `${comicName} - ${episode}`;
     document.getElementById('header').innerHTML = `${comicName} - ${episode}`;
-    document.getElementById('curComicEpi').textContent = episode;
+    // document.getElementById('curComicEpi').textContent = episode;
     
     const container = imagesContainer || document.getElementById('content');
     
@@ -390,39 +391,91 @@ function updateComicMeta() {
     }
   });
   
-  const updateScoreAndUI = () => {
-    const score = parseInt(scoreInputEle.value) || 0;
-    
-    if (state.comicMetaInfo && state.curComicName) {
-      if (!state.comicMetaInfo[state.curComicName]) {
-        state.comicMetaInfo[state.curComicName] = { tags: [], score: 0 };
-      }
-      state.comicMetaInfo[state.curComicName].score = score;
-      
-      api.updateComicScore(state.curComicName, score)
-        .then(() => {
-          ui.warning('评分更新成功', 2000, 'top');
-          updateSummaryElement();
-        })
-        .catch(err => {
-          console.error('Failed to update score:', err);
-          ui.warning('评分更新失败', 2000, 'top');
-        });
-    }
-  };
+  // Initialize star rating system
+  initStarRating();
   
   const updateSummaryElement = () => {
     const summaryEle = state.summaryEleMap.get(state.curComicName);
     if (summaryEle && state.comicMetaInfo[state.curComicName]) {
       const { tags = [], score = 0 } = state.comicMetaInfo[state.curComicName];
-      summaryEle.innerHTML = `${state.curComicName} <span class="tags">${tags.join(',')}</span> <span class="score">评分：${score}</span>`;
+      const starDisplay = formatStarRating(score);
+      summaryEle.innerHTML = `${state.curComicName} <span class="tags">${tags.join(',')}</span> <span class="score">评分：${score} <span class="stars">${starDisplay}</span></span>`;
     }
   };
+}
+
+// Helper function to format star rating for display
+function formatStarRating(score) {
+  // Convert score (0-5) to star characters
+  const normalizedScore = Math.min(5, Math.max(0, score));
+  const fullStars = Math.floor(normalizedScore);
+  const halfStar = normalizedScore % 1 >= 0.5 ? 1 : 0;
+  const emptyStars = 5 - fullStars - halfStar;
   
-  // Episode tag and score handling could be added here
+  return '★'.repeat(fullStars) + (halfStar ? '½' : '') + '☆'.repeat(emptyStars);
+}
+
+// Initialize star rating system
+function initStarRating() {
+  const starContainer = document.getElementById('ratingStars');
+  const ratingValue = document.getElementById('ratingValue');
+  const scoreInput = document.getElementById('scoreInput');
   
-  // Still keep the score save button handler
-  // document.getElementById('saveScore').addEventListener(action, updateScoreAndUI);
+  if (!starContainer) return;
+  
+  // Add click handlers for stars
+  const stars = starContainer.querySelectorAll('.star');
+  stars.forEach(star => {
+    star.addEventListener(action, function() {
+      const rating = parseInt(this.getAttribute('data-rating'));
+      
+      // Update hidden input value
+      scoreInput.value = rating;
+      
+      // Update visual display
+      ratingValue.textContent = rating;
+      
+      // Update active state of stars
+      stars.forEach(s => {
+        const starRating = parseInt(s.getAttribute('data-rating'));
+        if (starRating <= rating) {
+          s.classList.add('active');
+        } else {
+          s.classList.remove('active');
+        }
+      });
+      
+      // Save the rating
+      saveRating(rating);
+    });
+  });
+}
+
+// Save rating to API and update UI
+function saveRating(rating) {
+  if (state.comicMetaInfo && state.curComicName) {
+    if (!state.comicMetaInfo[state.curComicName]) {
+      state.comicMetaInfo[state.curComicName] = { tags: [], score: 0 };
+    }
+    state.comicMetaInfo[state.curComicName].score = rating;
+    
+    api.updateComicScore(state.curComicName, rating)
+      .then(() => {
+        ui.warning('评分更新成功', 2000, 'top');
+        
+        // Update the comic list display
+        const summaryEle = state.summaryEleMap.get(state.curComicName);
+        if (summaryEle) {
+          const { tags = [] } = state.comicMetaInfo[state.curComicName];
+          const starDisplay = formatStarRating(rating);
+          summaryEle.innerHTML = `${state.curComicName} <span class="tags">${tags.join(',')}</span> <span class="score">评分：${rating} <span class="stars">${starDisplay}</span></span>`;
+        }
+      })
+      .catch(err => {
+        console.error('Failed to update score:', err);
+        ui.warning('评分更新失败', 2000, 'top');
+      });
+  }
 }
 
 function loadNextEpisode(needConfirm = false) {
@@ -630,8 +683,11 @@ function initEventListeners() {
         tagManager.setCurrentTags(tags);
         tagManager.renderTagChips(document.getElementById('tagChips'));
         
-        // Update score input
-        document.getElementById('scoreInput').value = score;
+        // Update star rating display
+        updateStarRatingDisplay(score);
+      } else {
+        // Reset star rating display if no meta info
+        updateStarRatingDisplay(0);
       }
     }
   });
@@ -747,6 +803,31 @@ function initEventListeners() {
       calculateSectionPositions(comicsContainer);
     }
   }, 250));
+}
+
+// Helper function to update star rating display
+function updateStarRatingDisplay(score) {
+  const stars = document.querySelectorAll('#ratingStars .star');
+  const ratingValue = document.getElementById('ratingValue');
+  const scoreInput = document.getElementById('scoreInput');
+  
+  // Update hidden input value
+  if (scoreInput) scoreInput.value = score;
+  
+  // Update rating value display
+  if (ratingValue) ratingValue.textContent = score;
+  
+  // Update stars display
+  if (stars && stars.length) {
+    stars.forEach(star => {
+      const rating = parseInt(star.getAttribute('data-rating'));
+      if (rating <= score) {
+        star.classList.add('active');
+      } else {
+        star.classList.remove('active');
+      }
+    });
+  }
 }
 
 function initSpeedSettings() {
