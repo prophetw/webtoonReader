@@ -11,6 +11,11 @@ const letters = [
 	'#'
 ];
 
+// Helper function to remove tone marks from pinyin letters
+function normalizePinyin(str) {
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
 function groupByLetters(words) {
   // 初始化分组
   const groups = {};
@@ -19,17 +24,26 @@ function groupByLetters(words) {
   words.forEach(word => {
     if (!word || !word.length) return;
     
+    word = word.trim();
+    
     // 获取首字符并转换为大写
     let ch = word.charAt(0);
     let initial = ch.toUpperCase();
     
     // 若首字符为中文，则转换为拼音首字母
-    if (/[\u4e00-\u9fa5]/.test(ch)) {
-      const py = pinyin(ch, { style: Pinyin.STYLE_NORMAL, heteronym: false });
+    if (/[\u4e00-\u9fff]/.test(ch)) {
+      let pinyinOptions = {
+        style: Pinyin.STYLE_NORMAL,
+        heteronym: false
+      };
+      const py = pinyin(ch, pinyinOptions);
       if (py && py[0] && py[0][0]) {
-        initial = py[0][0].charAt(0).toUpperCase();
+        // Normalize to remove tone marks
+        initial = normalizePinyin(py[0][0].charAt(0).toUpperCase());
+        // console.log(`Character ${ch}: original pinyin: ${py[0][0]}, normalized initial: ${initial}`);
       }
     }
+    // console.log(' --- initial --- ', initial);
     
     // 若初始字母不在预设范围内，则归入 '#' 分组
     if (!groups.hasOwnProperty(initial)) {
@@ -42,6 +56,8 @@ function groupByLetters(words) {
 }
 
 const testData = [
+  "阿姨",
+  "偶像",
     "科技",
     "音乐",
     "书籍",
