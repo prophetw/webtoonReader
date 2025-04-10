@@ -268,9 +268,33 @@ async function loadEpisodes(comicName) {
     
     state.curEpisodesAry.forEach((episode, index) => {
       const episodeDiv = document.createElement('div');
-      episodeDiv.textContent = episode;
       episodeDiv.setAttribute('data-index', index);
       episodeDiv.setAttribute('data-episode', episode);
+      
+      // Basic episode display
+      let episodeHTML = episode;
+      
+      // Check if we have metadata for this episode
+      if (state.comicMetaInfo && 
+          state.comicMetaInfo[comicName] && 
+          state.comicMetaInfo[comicName].episodes && 
+          state.comicMetaInfo[comicName].episodes[episode]) {
+        
+        const episodeMeta = state.comicMetaInfo[comicName].episodes[episode];
+        
+        // Add score if available
+        if (episodeMeta.score) {
+          const starDisplay = formatStarRating(episodeMeta.score);
+          episodeHTML += ` <span class="score">评分：${episodeMeta.score} <span class="stars">${starDisplay}</span></span>`;
+        }
+        
+        // Add tags if available
+        if (episodeMeta.tags && episodeMeta.tags.length > 0) {
+          episodeHTML += ` <span class="tags">${episodeMeta.tags.join(',')}</span>`;
+        }
+      }
+      
+      episodeDiv.innerHTML = episodeHTML;
       episodesDom.appendChild(episodeDiv);
     });
     
@@ -300,7 +324,42 @@ async function loadImages(comicName, episode, imagesContainer = null) {
     
     document.title = `${comicName} - ${episode}`;
     document.getElementById('header').innerHTML = `${comicName} - ${episode}`;
-    // document.getElementById('curComicEpi').textContent = episode;
+    document.getElementById('curEpisodeName').textContent = episode;
+    
+    // Load episode-specific metadata if available
+    if (state.comicMetaInfo && state.comicMetaInfo[comicName] && 
+        state.comicMetaInfo[comicName].episodes && 
+        state.comicMetaInfo[comicName].episodes[episode]) {
+      
+      const episodeMeta = state.comicMetaInfo[comicName].episodes[episode];
+      
+      // Update episode tags display
+      if (episodeMeta.tags && Array.isArray(episodeMeta.tags)) {
+        tagManager.setCurrentTags(episodeMeta.tags, 'episode');
+        tagManager.renderTagChips(document.getElementById('episodeTagChips'));
+      } else {
+        tagManager.setCurrentTags([], 'episode');
+        tagManager.renderTagChips(document.getElementById('episodeTagChips'));
+      }
+      
+      // Update episode rating display
+      if (typeof episodeMeta.score !== 'undefined') {
+        updateStarRatingDisplay(episodeMeta.score, 'episodeRatingStars');
+        document.getElementById('episodeRatingValue').textContent = episodeMeta.score;
+        document.getElementById('episodeScoreInput').value = episodeMeta.score;
+      } else {
+        updateStarRatingDisplay(0, 'episodeRatingStars');
+        document.getElementById('episodeRatingValue').textContent = '0';
+        document.getElementById('episodeScoreInput').value = '0';
+      }
+    } else {
+      // Reset episode tags and rating if no metadata exists
+      tagManager.setCurrentTags([], 'episode');
+      tagManager.renderTagChips(document.getElementById('episodeTagChips'));
+      updateStarRatingDisplay(0, 'episodeRatingStars');
+      document.getElementById('episodeRatingValue').textContent = '0';
+      document.getElementById('episodeScoreInput').value = '0';
+    }
     
     const container = imagesContainer || document.getElementById('content');
     
@@ -355,12 +414,43 @@ async function loadImages(comicName, episode, imagesContainer = null) {
   }
 }
 
+// Update episode tags function
+async function updateEpisodeTags(comicName, episode, tags) {
+  if (!comicName || !episode) return;
+  
+  try {
+    // Call the server API to update episode tags
+    const success = await api.updateEpisodeTags(comicName, episode, tags);
+    
+    // Update local state if available
+    if (success && state.comicMetaInfo && state.comicMetaInfo[comicName]) {
+      // Initialize episodes object if not exists
+      if (!state.comicMetaInfo[comicName].episodes) {
+        state.comicMetaInfo[comicName].episodes = {};
+      }
+      
+      // Initialize episode entry if not exists
+      if (!state.comicMetaInfo[comicName].episodes[episode]) {
+        state.comicMetaInfo[comicName].episodes[episode] = { tags: [], score: 0 };
+      }
+      
+      // Update tags in local state
+      state.comicMetaInfo[comicName].episodes[episode].tags = tags;
+    }
+    
+    return success;
+  } catch (error) {
+    console.error(`Failed to update tags for ${comicName} - ${episode}:`, error);
+    throw error;
+  }
+}
+
+// Initialize tag managers for both comic and episode levels
 function updateComicMeta() {
   const scoreInputEle = document.getElementById('scoreInput');
-  const tagInputEpiEle = document.getElementById('tagInputEpi');
-  const scoreInputEpiEle = document.getElementById('scoreInputEpi');
+  const episodeScoreInputEle = document.getElementById('episodeScoreInput');
   
-  // Initialize the tag manager
+  // Initialize the comic tag manager
   tagManager.initializeTagInput(
     'tagInput',
     'tagChips',
@@ -369,30 +459,64 @@ function updateComicMeta() {
     'clearTags'
   );
   
-  // Listen for tagsUpdated event from tagManager
+  // Initialize the episode tag manager
+  tagManager.initializeTagInput(
+    'episodeTagInput',
+    'episodeTagChips',
+    'episodeTagSuggestions',
+    'saveEpisodeTag',
+    'clearEpisodeTags'
+  );
+  
+  // Listen for comic tagsUpdated event from tagManager
   document.addEventListener('tagsUpdated', (e) => {
     const tags = e.detail.tags;
+    const source = e.detail.source || 'comic'; // Default to comic level if not specified
     
-    if (state.comicMetaInfo && state.curComicName) {
-      if (!state.comicMetaInfo[state.curComicName]) {
-        state.comicMetaInfo[state.curComicName] = { tags: [], score: 0 };
+    if (source === 'comic') {
+      // Update comic tags
+      if (state.comicMetaInfo && state.curComicName) {
+        if (!state.comicMetaInfo[state.curComicName]) {
+          state.comicMetaInfo[state.curComicName] = { tags: [], score: 0 };
+        }
+        state.comicMetaInfo[state.curComicName].tags = tags;
+        
+        api.updateComicTags(state.curComicName, tags)
+          .then(() => {
+            ui.warning('标签更新成功', 2000, 'top');
+            updateSummaryElement();
+          })
+          .catch(err => {
+            console.error('Failed to update tags:', err);
+            ui.warning('标签更新失败', 2000, 'top');
+          });
       }
-      state.comicMetaInfo[state.curComicName].tags = tags;
+    } else if (source === 'episode' && state.curComicName && state.curEpisodesAry) {
+      // Update episode tags
+      const episodeName = state.curEpisodesAry[state.curComicEpisode];
       
-      api.updateComicTags(state.curComicName, tags)
-        .then(() => {
-          ui.warning('标签更新成功', 2000, 'top');
-          updateSummaryElement();
-        })
-        .catch(err => {
-          console.error('Failed to update tags:', err);
-          ui.warning('标签更新失败', 2000, 'top');
-        });
+      if (episodeName) {
+        updateEpisodeTags(state.curComicName, episodeName, tags)
+          .then(() => {
+            ui.warning('集数标签更新成功', 2000, 'top');
+          })
+          .catch(err => {
+            console.error('Failed to update episode tags:', err);
+            ui.warning('集数标签更新失败', 2000, 'top');
+          });
+      }
     }
   });
   
-  // Initialize star rating system
-  initStarRating();
+  // Initialize comic level star rating system
+  initStarRating('ratingStars', 'ratingValue', 'scoreInput', (rating) => {
+    saveRating(rating);
+  });
+  
+  // Initialize episode level star rating system
+  initStarRating('episodeRatingStars', 'episodeRatingValue', 'episodeScoreInput', (rating) => {
+    saveEpisodeRating(rating);
+  });
   
   const updateSummaryElement = () => {
     const summaryEle = state.summaryEleMap.get(state.curComicName);
@@ -416,10 +540,10 @@ function formatStarRating(score) {
 }
 
 // Initialize star rating system
-function initStarRating() {
-  const starContainer = document.getElementById('ratingStars');
-  const ratingValue = document.getElementById('ratingValue');
-  const scoreInput = document.getElementById('scoreInput');
+function initStarRating(starContainerId, ratingValueId, scoreInputId, saveCallback) {
+  const starContainer = document.getElementById(starContainerId);
+  const ratingValue = document.getElementById(ratingValueId);
+  const scoreInput = document.getElementById(scoreInputId);
   
   if (!starContainer) return;
   
@@ -446,7 +570,7 @@ function initStarRating() {
       });
       
       // Save the rating
-      saveRating(rating);
+      saveCallback(rating);
     });
   });
   
@@ -478,35 +602,38 @@ function initStarRating() {
     // When mouse leaves the entire container, ensure we reset to saved state
     starContainer.addEventListener('mouseleave', function() {
       const currentRating = parseInt(scoreInput.value || '0');
-      updateStarRatingDisplay(currentRating);
+      updateStarRatingDisplay(currentRating, starContainerId);
     });
   }
 }
 
-// // Helper function to update star rating display - UPDATED LOGIC
-// function updateStarRatingDisplay(score) {
-//   const stars = document.querySelectorAll('#ratingStars .star');
-//   const ratingValue = document.getElementById('ratingValue');
-//   const scoreInput = document.getElementById('scoreInput');
+// Helper function to update star rating display
+function updateStarRatingDisplay(score, containerId) {
+  const stars = document.querySelectorAll(`#${containerId || 'ratingStars'} .star`);
+  const valueId = containerId === 'episodeRatingStars' ? 'episodeRatingValue' : 'ratingValue';
+  const inputId = containerId === 'episodeRatingStars' ? 'episodeScoreInput' : 'scoreInput';
   
-//   // Update hidden input value
-//   if (scoreInput) scoreInput.value = score;
+  const ratingValue = document.getElementById(valueId);
+  const scoreInput = document.getElementById(inputId);
   
-//   // Update rating value display
-//   if (ratingValue) ratingValue.textContent = score;
+  // Update hidden input value
+  if (scoreInput) scoreInput.value = score;
   
-//   // Update stars display - FIX THE LOGIC HERE
-//   if (stars && stars.length) {
-//     stars.forEach(star => {
-//       const rating = parseInt(star.getAttribute('data-rating'));
-//       if (rating <= score) {
-//         star.classList.add('active');
-//       } else {
-//         star.classList.remove('active');
-//       }
-//     });
-//   }
-// }
+  // Update rating value display
+  if (ratingValue) ratingValue.textContent = score;
+  
+  // Update stars display
+  if (stars && stars.length) {
+    stars.forEach(star => {
+      const rating = parseInt(star.getAttribute('data-rating'));
+      if (rating <= score) {
+        star.classList.add('active');
+      } else {
+        star.classList.remove('active');
+      }
+    });
+  }
+}
 
 function saveRating(rating) {
   if (state.comicMetaInfo && state.curComicName) {
@@ -530,6 +657,43 @@ function saveRating(rating) {
       .catch(err => {
         console.error('Failed to update score:', err);
         ui.warning('评分更新失败', 2000, 'top');
+      });
+  }
+}
+
+function saveEpisodeRating(rating) {
+  if (state.comicMetaInfo && state.curComicName && state.curEpisodesAry) {
+    const episodeName = state.curEpisodesAry[state.curComicEpisode];
+    
+    if (!episodeName) {
+      ui.warning('没有选择集数', 2000, 'top');
+      return;
+    }
+    
+    // Ensure the episode metadata structure exists
+    if (!state.comicMetaInfo[state.curComicName]) {
+      state.comicMetaInfo[state.curComicName] = { tags: [], score: 0, episodes: {} };
+    }
+    
+    if (!state.comicMetaInfo[state.curComicName].episodes) {
+      state.comicMetaInfo[state.curComicName].episodes = {};
+    }
+    
+    if (!state.comicMetaInfo[state.curComicName].episodes[episodeName]) {
+      state.comicMetaInfo[state.curComicName].episodes[episodeName] = { tags: [], score: 0 };
+    }
+    
+    // Update the score in local state
+    state.comicMetaInfo[state.curComicName].episodes[episodeName].score = rating;
+    
+    // Save to server
+    api.updateEpisodeScore(state.curComicName, episodeName, rating)
+      .then(() => {
+        ui.warning('集数评分更新成功', 2000, 'top');
+      })
+      .catch(err => {
+        console.error('Failed to update episode score:', err);
+        ui.warning('集数评分更新失败', 2000, 'top');
       });
   }
 }
@@ -740,10 +904,10 @@ function initEventListeners() {
         tagManager.renderTagChips(document.getElementById('tagChips'));
         
         // Update star rating display
-        updateStarRatingDisplay(score);
+        updateStarRatingDisplay(score, 'ratingStars');
       } else {
         // Reset star rating display if no meta info
-        updateStarRatingDisplay(0);
+        updateStarRatingDisplay(0, 'ratingStars');
       }
     }
   });
@@ -859,31 +1023,6 @@ function initEventListeners() {
       calculateSectionPositions(comicsContainer);
     }
   }, 250));
-}
-
-// Helper function to update star rating display
-function updateStarRatingDisplay(score) {
-  const stars = document.querySelectorAll('#ratingStars .star');
-  const ratingValue = document.getElementById('ratingValue');
-  const scoreInput = document.getElementById('scoreInput');
-  
-  // Update hidden input value
-  if (scoreInput) scoreInput.value = score;
-  
-  // Update rating value display
-  if (ratingValue) ratingValue.textContent = score;
-  
-  // Update stars display - FIX THE LOGIC HERE
-  if (stars && stars.length) {
-    stars.forEach(star => {
-      const rating = parseInt(star.getAttribute('data-rating'));
-      if (rating <= score) {
-        star.classList.add('active');
-      } else {
-        star.classList.remove('active');
-      }
-    });
-  }
 }
 
 function initSpeedSettings() {

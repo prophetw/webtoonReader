@@ -822,7 +822,7 @@
         
         <!-- Improved tag input -->
         <div class="tag-container">
-          <label>标签:</label>
+          <label>漫画标签:</label>
           <div id="tagChips" class="tag-chips"></div>
           <div style="position: relative;">
             <input id="tagInput" type="text" placeholder="输入标签后按回车添加" style="width: 100%;">
@@ -835,7 +835,7 @@
         </div>
         
         <div class="rating-container">
-          <label for="ratingStars">评分：</label>
+          <label for="ratingStars">漫画评分：</label>
           <div class="star-rating" id="ratingStars">
             <span class="star" data-rating="1">★</span>
             <span class="star" data-rating="2">★</span>
@@ -847,6 +847,39 @@
             <span id="ratingValue">0</span>/5
           </div>
           <input id="scoreInput" type="hidden" value="0">
+        </div>
+        
+        <!-- Episode-specific tags and ratings -->
+        <div id="episodeMetaSection" style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed #ccc;">
+          <div>当前集数: <span id="curEpisodeName"></span></div>
+          
+          <div class="tag-container">
+            <label>本集标签:</label>
+            <div id="episodeTagChips" class="tag-chips"></div>
+            <div style="position: relative;">
+              <input id="episodeTagInput" type="text" placeholder="输入本集标签后按回车添加" style="width: 100%;">
+              <div id="episodeTagSuggestions" class="tag-suggestions"></div>
+            </div>
+            <div style="margin-top: 8px;">
+              <button id="saveEpisodeTag">保存</button>
+              <button id="clearEpisodeTags">清空</button>
+            </div>
+          </div>
+          
+          <div class="rating-container">
+            <label for="episodeRatingStars">本集评分：</label>
+            <div class="star-rating" id="episodeRatingStars">
+              <span class="star" data-rating="1">★</span>
+              <span class="star" data-rating="2">★</span>
+              <span class="star" data-rating="3">★</span>
+              <span class="star" data-rating="4">★</span>
+              <span class="star" data-rating="5">★</span>
+            </div>
+            <div class="rating-value">
+              <span id="episodeRatingValue">0</span>/5
+            </div>
+            <input id="episodeScoreInput" type="hidden" value="0">
+          </div>
         </div>
       </div>
     </div>
@@ -872,6 +905,6 @@
     <!-- <div class="debug-info" id="debugInfo"></div> -->
     
     <!-- Load modules with type="module" -->
-    <script type="module" src="js/index.js"></script>
+    <!-- <script type="module" src="js/index.js"></script> -->
   </body>
 </html>

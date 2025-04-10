@@ -86,6 +86,60 @@ app.post('/api/updateTags/:mangaName', (req, res) => {
   });
 });
 
+// 更新特定漫画特定集数的标签
+app.post('/api/updateTags/:mangaName/:episode', (req, res) => {
+  const mangaName = req.params.mangaName;
+  const episode = req.params.episode;
+  const newTags = req.body.tags;
+  console.log(`Updating tags for ${mangaName} - ${episode}:`, newTags);
+
+  // 读取现有的标签文件
+  fs.readFile(tagsFilePath, (err, data) => {
+    if (err) {
+      res.status(500).send('Error reading metadata file.');
+      return;
+    }
+
+    // 解析现有的数据
+    const metaData = JSON.parse(data);
+
+    // 确保漫画记录存在
+    if (!metaData[mangaName]) {
+      metaData[mangaName] = {
+        tags: [],
+        cover: '',
+        score: 0,
+        episodes: {}
+      };
+    }
+    
+    // 确保episodes属性存在
+    if (!metaData[mangaName].episodes) {
+      metaData[mangaName].episodes = {};
+    }
+    
+    // 确保特定集数的记录存在
+    if (!metaData[mangaName].episodes[episode]) {
+      metaData[mangaName].episodes[episode] = {
+        tags: [],
+        score: 0
+      };
+    }
+    
+    // 更新标签
+    metaData[mangaName].episodes[episode].tags = newTags;
+
+    // 写回修改后的数据到文件
+    fs.writeFile(tagsFilePath, JSON.stringify(metaData, null, 2), (err) => {
+      if (err) {
+        res.status(500).send('Error writing metadata file.');
+        return;
+      }
+      res.send(`Tags for ${mangaName} - ${episode} updated successfully.`);
+    });
+  });
+});
+
 // 更新特定漫画的标签
 app.post('/api/updateScores/:mangaName', (req, res) => {
   const mangaName = req.params.mangaName;
@@ -118,6 +172,60 @@ app.post('/api/updateScores/:mangaName', (req, res) => {
         return;
       }
       res.send(`Score for ${mangaName} updated successfully.`);
+    });
+  });
+});
+
+// 更新特定漫画特定集数的评分
+app.post('/api/updateScores/:mangaName/:episode', (req, res) => {
+  const mangaName = req.params.mangaName;
+  const episode = req.params.episode;
+  const newScore = req.body.score;
+  console.log(`Updating score for ${mangaName} - ${episode} to ${newScore}`);
+
+  // 读取现有的元数据文件
+  fs.readFile(tagsFilePath, (err, data) => {
+    if (err) {
+      res.status(500).send('Error reading metadata file.');
+      return;
+    }
+
+    // 解析现有的数据
+    const metaData = JSON.parse(data);
+
+    // 确保漫画记录存在
+    if (!metaData[mangaName]) {
+      metaData[mangaName] = {
+        tags: [],
+        cover: '',
+        score: 0,
+        episodes: {}
+      };
+    }
+    
+    // 确保episodes属性存在
+    if (!metaData[mangaName].episodes) {
+      metaData[mangaName].episodes = {};
+    }
+    
+    // 确保特定集数的记录存在
+    if (!metaData[mangaName].episodes[episode]) {
+      metaData[mangaName].episodes[episode] = {
+        tags: [],
+        score: 0
+      };
+    }
+    
+    // 更新评分
+    metaData[mangaName].episodes[episode].score = newScore;
+
+    // 写回修改后的数据到文件
+    fs.writeFile(tagsFilePath, JSON.stringify(metaData, null, 2), (err) => {
+      if (err) {
+        res.status(500).send('Error writing metadata file.');
+        return;
+      }
+      res.send(`Score for ${mangaName} - ${episode} updated successfully.`);
     });
   });
 });
