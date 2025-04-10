@@ -5,6 +5,7 @@
 const tagManager = {
   allTags: new Map(), // Store all tags with frequency
   currentTags: [],    // Currently selected tags
+  currentTagSource: 'comic', // Source context for current tags
   categories: {
     story: ['剧情', '故事', '设定', '世界观', '精彩', '烂尾', '高潮', '反转'],
     character: ['角色', '主角', '配角', '帅', '美', '性格', '成长'],
@@ -52,7 +53,7 @@ const tagManager = {
   },
   
   // Set current tags
-  setCurrentTags(tags) {
+  setCurrentTags(tags, source = 'comic') {
     if (Array.isArray(tags)) {
       this.currentTags = [...tags];
       
@@ -66,11 +67,19 @@ const tagManager = {
       
       this.saveAllTags();
     }
+    
+    // Store the source context for this set of tags
+    this.currentTagSource = source;
   },
   
   // Get current tags
   getCurrentTags() {
     return [...this.currentTags];
+  },
+  
+  // Get current tag source
+  getCurrentTagSource() {
+    return this.currentTagSource || 'comic';
   },
   
   // Add a new tag - allows custom tags
@@ -208,9 +217,15 @@ const tagManager = {
     // Save button
     if (saveButton) {
       saveButton.addEventListener('click', () => {
-        // Dispatch event with current tags
+        // Determine if this is for comic or episode based on the input ID
+        const source = inputId.includes('episode') ? 'episode' : 'comic';
+        
+        // Dispatch event with current tags and source context
         const event = new CustomEvent('tagsUpdated', {
-          detail: { tags: this.getCurrentTags() }
+          detail: { 
+            tags: this.getCurrentTags(),
+            source: source
+          }
         });
         document.dispatchEvent(event);
       });
@@ -271,6 +286,10 @@ const tagManager = {
     
     container.innerHTML = '';
     
+    // 确定当前是哪个输入框，episode还是comic
+    const isEpisode = inputElement.id.includes('episode');
+    const chipsContainerId = isEpisode ? 'episodeTagChips' : 'tagChips';
+    
     if (suggestions.length === 0) {
       // Show hint for creating a new tag
       const newTagHint = document.createElement('div');
@@ -279,7 +298,7 @@ const tagManager = {
       
       newTagHint.addEventListener('click', () => {
         if (this.addTag(query)) {
-          this.renderTagChips(document.getElementById('tagChips'));
+          this.renderTagChips(document.getElementById(chipsContainerId));
           inputElement.value = '';
           container.classList.remove('active');
         }
@@ -294,7 +313,7 @@ const tagManager = {
         
         item.addEventListener('click', () => {
           if (this.addTag(tag)) {
-            this.renderTagChips(document.getElementById('tagChips'));
+            this.renderTagChips(document.getElementById(chipsContainerId));
             inputElement.value = '';
             container.classList.remove('active');
           }
